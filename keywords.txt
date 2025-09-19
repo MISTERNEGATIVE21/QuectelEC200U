@@ -1,0 +1,39 @@
+QuectelEC200U	KEYWORD1
+
+begin	KEYWORD2
+sendCommand	KEYWORD2
+readResponse	KEYWORD2
+waitForNetwork	KEYWORD2
+attachData	KEYWORD2
+activatePDP	KEYWORD2
+deactivatePDP	KEYWORD2
+getRegistrationStatus	KEYWORD2
+isSimReady	KEYWORD2
+
+httpGet	KEYWORD2
+httpPost	KEYWORD2
+httpsGet	KEYWORD2
+httpsPost	KEYWORD2
+
+mqttConnect	KEYWORD2
+mqttPublish	KEYWORD2
+mqttSubscribe	KEYWORD2
+
+startGNSS	KEYWORD2
+stopGNSS	KEYWORD2
+isGNSSOn	KEYWORD2
+setGNSSConfig	KEYWORD2
+getGNSSLocation	KEYWORD2
+getNMEASentence	KEYWORD2
+
+fsList	KEYWORD2
+fsUpload	KEYWORD2
+fsRead	KEYWORD2
+fsDelete	KEYWORD2
+
+sslConfigure	KEYWORD2
+ntpSync	KEYWORD2
+getClock	KEYWORD2
+setClock	KEYWORD2
+
+enablePSM	KEYWORD2

@@ -1,3 +1,14 @@
+/*
+  QuectelEC200U_CN - Arduino library for Quectel EC200U (CN-AA)
+  Author: Your Name <you@example.com>
+  Maintainer: Your Name <you@example.com>
+  License: MIT (see LICENSE)
+  Copyright (c) 2025 Contributors
+
+  Quectel and EC200U are trademarks of Quectel Wireless Solutions Co., Ltd.
+  This library is an independent, unofficial project and is not affiliated with or endorsed by Quectel.
+*/
+
 #ifndef QUECTEL_EC200U_H
 #define QUECTEL_EC200U_H
 
