@@ -1,6 +1,7 @@
 #include <QuectelEC200U.h>
 
 #if defined(ARDUINO_ARCH_ESP32)
+// ESP32: use UART1 with configurable pins
 HardwareSerial SerialAT(1);
 #ifndef AT_RX_PIN
 #define AT_RX_PIN 16
@@ -10,11 +11,11 @@ HardwareSerial SerialAT(1);
 #endif
 QuectelEC200U modem(SerialAT, 115200, AT_RX_PIN, AT_TX_PIN);
 #else
+// Other boards: use SoftwareSerial
 #include <SoftwareSerial.h>
 SoftwareSerial SerialAT(7, 8);
 QuectelEC200U modem(SerialAT);
 #endif
-
 
 void setup() {
   Serial.begin(115200);
@@ -23,12 +24,11 @@ void setup() {
 #endif
   modem.begin();
 
-  String response;
-  if (modem.httpGet("http://example.com", response)) {
-    Serial.println("HTTP Response:");
-    Serial.println(response);
+  Serial.println("Sending SMS...");
+  if (modem.sendSMS("+1234567890", "Hello from EC200U!")) {
+    Serial.println("SMS sent");
   } else {
-    Serial.println("HTTP request failed");
+    Serial.println("Failed to send SMS");
   }
 }
 

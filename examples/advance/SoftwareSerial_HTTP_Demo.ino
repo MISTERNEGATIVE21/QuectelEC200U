@@ -1,5 +1,5 @@
 #include <SoftwareSerial.h>
-#include <QuectelEC200U_CN.h>
+#include <QuectelEC200U.h>
 
 // Demo: Use SoftwareSerial on boards without extra UARTs
 

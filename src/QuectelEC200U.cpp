@@ -1,5 +1,5 @@
 /*
-  QuectelEC200U - Arduino library for Quectel EC200U (CN-AA)
+  QuectelEC200U_CN - Arduino library for Quectel EC200U (CN-AA)
   Author: misternegative21
   Maintainer: MisterNegative21 <misternegative21@gmail.com>
   Repository: https://github.com/MISTERNEGATIVE21/QuectelEC200U_CN
@@ -11,11 +11,36 @@
 
 #include "QuectelEC200U.h"
 
+QuectelEC200U::QuectelEC200U(HardwareSerial &serial, uint32_t baud, int8_t rxPin, int8_t txPin) {
+  _serial = &serial;
+  _hwSerial = &serial;
+  _baud = baud;
+  _rxPin = rxPin;
+  _txPin = txPin;
+}
+
 QuectelEC200U::QuectelEC200U(Stream &stream) {
   _serial = &stream;
+  _hwSerial = nullptr;
+  _baud = 0;
+  _rxPin = -1;
+  _txPin = -1;
 }
 
 void QuectelEC200U::begin() {
+#if defined(ARDUINO_ARCH_ESP32)
+  if (_hwSerial) {
+    if (_rxPin >= 0 && _txPin >= 0) {
+      _hwSerial->begin(_baud, SERIAL_8N1, _rxPin, _txPin);
+    } else {
+      _hwSerial->begin(_baud);
+    }
+  }
+#else
+  if (_hwSerial) {
+    _hwSerial->begin(_baud);
+  }
+#endif
   delay(200);
   flushInput();
   // Try to sync and disable echo

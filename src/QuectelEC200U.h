@@ -1,5 +1,5 @@
 /*
-  QuectelEC200U - Arduino library for Quectel EC200U (CN-AA)
+  QuectelEC200U_CN - Arduino library for Quectel EC200U (CN-AA)
   Author: misternegative21
   Maintainer: MisterNegative21 <misternegative21@gmail.com>
   Repository: https://github.com/MISTERNEGATIVE21/QuectelEC200U_CN
@@ -13,17 +13,15 @@
 #define QUECTEL_EC200U_H
 
 #include <Arduino.h>
-#include <Stream.h>
 
 class QuectelEC200U {
   public:
-    // Constructor for any Stream object (HardwareSerial, SoftwareSerial, etc.)
-    // The user is responsible for calling .begin() on the stream object before modem.begin().
+    // HardwareSerial constructor (auto-configure on begin). On ESP32, optional RX/TX pins are supported.
+    QuectelEC200U(HardwareSerial &serial, uint32_t baud = 115200, int8_t rxPin = -1, int8_t txPin = -1);
+    // Generic Stream constructor (e.g., SoftwareSerial, USB CDC). Stream must be pre-begun by the caller.
     QuectelEC200U(Stream &stream);
 
-    // Initializes the modem (sends ATE0, etc.). Does NOT begin the serial stream.
     void begin();
-    
     bool sendCommand(const String &cmd, const String &expect = "OK", uint32_t timeout = 1000);
     String readResponse(uint32_t timeout);
 
@@ -95,7 +93,11 @@ class QuectelEC200U {
     bool enablePSM(bool enable);
 
   private:
-    Stream *_serial; // I/O stream (HardwareSerial, SoftwareSerial, etc.)
+    Stream *_serial;             // I/O stream (HardwareSerial, SoftwareSerial, etc.)
+    HardwareSerial *_hwSerial;   // Optional HardwareSerial used for auto begin
+    uint32_t _baud;
+    int8_t _rxPin;
+    int8_t _txPin;
     void flushInput(); // drain any pending input
     bool expectURC(const String &tag, uint32_t timeout);
 };

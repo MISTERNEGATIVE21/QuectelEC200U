@@ -1,8 +1,19 @@
-#include <QuectelEC200U_CN.h>
+#include <QuectelEC200U.h>
 
-// Advanced MQTT over SSL: map MQTT client to SSL ctx and connect to 8883
-
-QuectelEC200U modem(Serial1, 115200);
+#if defined(ARDUINO_ARCH_ESP32)
+HardwareSerial SerialAT(1);
+#ifndef AT_RX_PIN
+#define AT_RX_PIN 16
+#endif
+#ifndef AT_TX_PIN
+#define AT_TX_PIN 17
+#endif
+QuectelEC200U modem(SerialAT, 115200, AT_RX_PIN, AT_TX_PIN);
+#else
+#include <SoftwareSerial.h>
+SoftwareSerial SerialAT(7, 8);
+QuectelEC200U modem(SerialAT);
+#endif
 
 const char* APN     = "your.apn";
 const char* MQTT_HOST = "test.mosquitto.org"; // change as needed
@@ -10,6 +21,9 @@ const int   MQTT_PORT = 8883; // TLS port
 
 void setup() {
   Serial.begin(115200);
+#if !defined(ARDUINO_ARCH_ESP32)
+  SerialAT.begin(9600);
+#endif
   delay(500);
   Serial.println("MQTT SSL demo");
 
