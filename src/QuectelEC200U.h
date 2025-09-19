@@ -42,6 +42,13 @@ class QuectelEC200U {
     bool sendSMS(const String &number, const String &text);
     String readSMS(int index);
 
+    // ===== Voice Call =====
+    bool dial(const String &number);
+    bool hangup();
+    bool answer();
+    String getCallList();
+    bool enableCallerId(bool enable);
+
     // ===== HTTP =====
     bool httpGet(const String &url, String &response);
     bool httpPost(const String &url, const String &data, String &response);
@@ -96,6 +103,16 @@ class QuectelEC200U {
 
     // ===== PSM =====
     bool enablePSM(bool enable);
+
+    // ===== Audio (speaker/microphone) =====
+    bool setSpeakerVolume(int level);         // AT+CLVL=<0..100>
+    bool setRingerVolume(int level);          // AT+CRSL=<0..100>
+    bool setMicMute(bool mute);               // AT+CMUT=<0|1>
+    bool setMicGain(int channel, int level);  // AT+QMIC=<chan>,<level>
+    bool setSidetone(bool enable, int level); // AT+QSIDET=<0|1>,<level>
+    bool setAudioChannel(int channel);        // AT+QAUDCH=<channel>
+    bool setAudioInterface(const String &params); // AT+QDAI=<params>
+    bool audioLoopback(bool enable);          // AT+QAUDLOOP=<0|1>
 
   private:
     Stream *_serial;             // I/O stream (HardwareSerial, SoftwareSerial, etc.)

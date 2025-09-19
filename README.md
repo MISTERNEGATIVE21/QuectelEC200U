@@ -7,10 +7,11 @@ Repository: [https://github.com/misternegative21Quaanctelec200u](https://github.
 ## Features
 - SIM/registration, PDP attach/activation
 - TCP sockets (QIOPEN/QISEND/QIRD), SSL/TLS (QSSLCFG/QSSLOPEN)
-- HTTP/HTTPS, MQTT (with TLS), USSD, SMS
+- HTTP/HTTPS, MQTT (with TLS), USSD, SMS, Voice calls
 - NTP/time, filesystem (upload/list/read/delete), TLS CA management
 - GNSS (start/stop, location, NMEA)
 - Power saving: PSM (CPSMS) and eDRX (CEDRXS)
+- Audio: Speaker volume, mic gain, sidetone, audio routing
 
 ## Installation
 - Using Arduino IDE: place this folder in your `libraries` directory or install via Library Manager after publishing.
@@ -65,6 +66,24 @@ See `examples` and `examples/advance` for more.
 - TLS: sslConfigure
 - Time: ntpSync/getClock/setClock
 - Power: enablePSM
+- Voice: dial/hangup/answer/getCallList/enableCallerId
+- Audio: setSpeakerVolume/setRingerVolume/setMicMute/setMicGain/setSidetone/setAudioChannel/setAudioInterface/audioLoopback
+
+### Audio quick start
+- Route audio to loudspeaker and set volume:
+  ```cpp
+  modem.setAudioChannel(2);
+  modem.setSpeakerVolume(80);
+  ```
+- Unmute mic and set gain:
+  ```cpp
+  modem.setMicMute(false);
+  modem.setMicGain(0, 8);
+  ```
+- Enable sidetone at medium level:
+  ```cpp
+  modem.setSidetone(true, 5);
+  ```
 
 ## Contributing
 PRs welcome. Please keep examples minimal and add documentation.

@@ -37,3 +37,20 @@ getClock	KEYWORD2
 setClock	KEYWORD2
 
 enablePSM	KEYWORD2
+
+// Voice Call
+dial	KEYWORD2
+hangup	KEYWORD2
+answer	KEYWORD2
+getCallList	KEYWORD2
+enableCallerId	KEYWORD2
+
+// Audio
+setSpeakerVolume	KEYWORD2
+setRingerVolume	KEYWORD2
+setMicMute	KEYWORD2
+setMicGain	KEYWORD2
+setSidetone	KEYWORD2
+setAudioChannel	KEYWORD2
+setAudioInterface	KEYWORD2
+audioLoopback	KEYWORD2

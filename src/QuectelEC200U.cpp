@@ -386,3 +386,68 @@ bool QuectelEC200U::mqttPublish(const String &topic, const String &message) {
 bool QuectelEC200U::mqttSubscribe(const String &topic) {
   return sendCommand("AT+QMTSUB=0,1,\"" + topic + "\",0", "+QMTSUB: 0,1,0", 5000);
 }
+
+// ===== Voice Call =====
+bool QuectelEC200U::dial(const String &number) {
+  // Dial voice call (trailing ';' selects voice)
+  return sendCommand(String("ATD") + number + ";");
+}
+
+bool QuectelEC200U::hangup() {
+  // Hang up call
+  return sendCommand("ATH");
+}
+
+bool QuectelEC200U::answer() {
+  // Answer incoming call
+  return sendCommand("ATA");
+}
+
+String QuectelEC200U::getCallList() {
+  _serial->println("AT+CLCC");
+  return readResponse(2000);
+}
+
+bool QuectelEC200U::enableCallerId(bool enable) {
+  return sendCommand(String("AT+CLIP=") + (enable ? "1" : "0"));
+}
+
+// ===== Audio (speaker/microphone) =====
+bool QuectelEC200U::setSpeakerVolume(int level) {
+  level = constrain(level, 0, 100);
+  return sendCommand(String("AT+CLVL=") + level);
+}
+
+bool QuectelEC200U::setRingerVolume(int level) {
+  level = constrain(level, 0, 100);
+  return sendCommand(String("AT+CRSL=") + level);
+}
+
+bool QuectelEC200U::setMicMute(bool mute) {
+  return sendCommand(String("AT+CMUT=") + (mute ? 1 : 0));
+}
+
+bool QuectelEC200U::setMicGain(int channel, int level) {
+  // Channel 0: main mic, 1: headset mic, ranges per module docs
+  level = constrain(level, 0, 15);
+  return sendCommand(String("AT+QMIC=") + channel + "," + level);
+}
+
+bool QuectelEC200U::setSidetone(bool enable, int level) {
+  level = constrain(level, 0, 15);
+  return sendCommand(String("AT+QSIDET=") + (enable ? 1 : 0) + "," + level);
+}
+
+bool QuectelEC200U::setAudioChannel(int channel) {
+  // 0: handset, 1: headset, 2: loudspeaker, etc. per Quectel AT manual
+  return sendCommand(String("AT+QAUDCH=") + channel);
+}
+
+bool QuectelEC200U::setAudioInterface(const String &params) {
+  // e.g., "1,0,0,1" per hardware routing needs
+  return sendCommand(String("AT+QDAI=") + params);
+}
+
+bool QuectelEC200U::audioLoopback(bool enable) {
+  return sendCommand(String("AT+QAUDLOOP=") + (enable ? 1 : 0));
+}
