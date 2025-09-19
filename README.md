@@ -4,24 +4,6 @@ Arduino library for Quectel EC200U (CN-AA firmware) providing a robust AT-comman
 
 Repository: [https://github.com/misternegative21Quaanctelec200u](https://github.com/MISTERNEGATIVE21/QuectelEC200U_CN)
 
-## Serial setup
-- ESP32/ESP8266 and boards with multiple UARTs: use `HardwareSerial` constructor and let `begin()` set the baud.
-  ```cpp
-  #include <QuectelEC200U_CN.h>
-  QuectelEC200U modem(Serial1, 115200);
-  ```
-- AVR/others with SoftwareSerial: create and `begin()` the stream yourself, then pass to the `Stream` constructor.
-  ```cpp
-  #include <SoftwareSerial.h>
-  #include <QuectelEC200U_CN.h>
-  SoftwareSerial ss(7, 8); // RX, TX
-  QuectelEC200U modem(ss);
-  void setup() {
-    ss.begin(9600);
-    modem.begin();
-  }
-  ```
-
 ## Features
 - SIM/registration, PDP attach/activation
 - TCP sockets (QIOPEN/QISEND/QIRD), SSL/TLS (QSSLCFG/QSSLOPEN)
@@ -34,25 +16,43 @@ Repository: [https://github.com/misternegative21Quaanctelec200u](https://github.
 - Using Arduino IDE: place this folder in your `libraries` directory or install via Library Manager after publishing.
 - Requirements: Any MCU with a UART to EC200U. Tested at 115200 baud. Architectures: `*`.
 
+## Serial setup
+- ESP32 (HardwareSerial with optional RX/TX pins):
+  ```cpp
+  #include <QuectelEC200U.h>
+  HardwareSerial SerialAT(1);
+  QuectelEC200U modem(SerialAT, 115200, /* RX */ 16, /* TX */ 17);
+  // in setup(): modem.begin(); // auto-configures UART on ESP32
+  ```
+- Other boards (SoftwareSerial):
+  ```cpp
+  #include <SoftwareSerial.h>
+  #include <QuectelEC200U.h>
+  SoftwareSerial SerialAT(7, 8); // RX, TX
+  QuectelEC200U modem(SerialAT);
+  // in setup(): SerialAT.begin(9600); modem.begin();
+  ```
+
 ## Usage
 ```cpp
-#include <QuectelEC200U_CN.h>
+#include <QuectelEC200U.h>
 
-QuectelEC200U modem(Serial1, 115200);
+HardwareSerial& modemSerial = Serial1; // or SoftwareSerial as shown above
+QuectelEC200U modem(modemSerial);
 
 void setup() {
   Serial.begin(115200);
+  modemSerial.begin(115200);
   modem.begin();
   modem.attachData("your.apn");
   modem.activatePDP(1);
   String resp;
-  modem.httpsGet("https://example.com", resp);
-  Serial.println(resp);
+  if (modem.httpsGet("https://example.com", resp)) Serial.println(resp);
 }
 void loop() {}
 ```
 
-See `examples/advance` and `examples/GNSSDemo`.
+See `examples` and `examples/advance` for more.
 
 ## API Surface
 - Core: begin, sendCommand, readResponse

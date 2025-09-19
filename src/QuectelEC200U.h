@@ -50,6 +50,11 @@ class QuectelEC200U {
     bool httpsGet(const String &url, String &response);
     bool httpsPost(const String &url, const String &data, String &response);
 
+    // ===== MQTT =====
+    bool mqttConnect(const String &server, int port);
+    bool mqttPublish(const String &topic, const String &message);
+    bool mqttSubscribe(const String &topic);
+
     // ===== TCP sockets =====
     int  tcpOpen(const String &host, int port, int ctxId = 1, int socketId = 0);
     bool tcpSend(int socketId, const String &data);
