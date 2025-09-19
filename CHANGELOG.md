@@ -1,11 +1,12 @@
 # Changelog
 
 ## 1.3.0 - 2025-09-20
-- **BREAKING CHANGE**: Refactored serial handling to use a single `Stream` constructor. Users are now required to call `.begin()` on their serial object (Hardware or Software) *before* calling `modem.begin()`. This provides greater flexibility, especially for ESP32 users needing to specify custom RX/TX pins.
-- Unified source code under a single primary header `QuectelEC200U.h`. A compatibility header `QuectelEC200U_CN.h` is retained for older examples.
-- Updated all examples to reflect the new, clearer serial initialization pattern.
-- Renamed `USS DDemo` example folder to `USSDDemo` for consistency.
-- Removed duplicate `SMSDEMO.ino` file.
+- Cross-board serial support: added HardwareSerial constructor with optional RX/TX pins (ESP32 auto-configured in begin) and a generic Stream constructor for SoftwareSerial/USB CDC.
+- Examples standardized to work on ESP32 (HardwareSerial) and classic boards (SoftwareSerial). All .ino files select the appropriate serial at compile time and initialize it before modem.begin().
+- Removed all includes of QuectelEC200U_CN.h from examples; primary header is QuectelEC200U.h. Compatibility header remains in src for legacy sketches.
+- FTP, SMS, GNSS, HTTP/HTTPS, MQTT, NTP, PSM, TCP, TTS, and all advanced demos updated to the new initialization pattern.
+- Packaging: library.properties includes set to QuectelEC200U.h; repository URL normalized.
+- Docs: README updated with serial setup guidance for both HardwareSerial and SoftwareSerial.
 
 ## 1.2.3 - 2025-09-19
 - Library naming synchronized to QuectelEC200U_CN; added primary wrapper header (QuectelEC200U_CN.h) and updated all examples to include it.
