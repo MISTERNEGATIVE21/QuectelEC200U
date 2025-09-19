@@ -4,6 +4,24 @@ Arduino library for Quectel EC200U (CN-AA firmware) providing a robust AT-comman
 
 Repository: [https://github.com/misternegative21Quaanctelec200u](https://github.com/MISTERNEGATIVE21/QuectelEC200U_CN)
 
+## Serial setup
+- ESP32/ESP8266 and boards with multiple UARTs: use `HardwareSerial` constructor and let `begin()` set the baud.
+  ```cpp
+  #include <QuectelEC200U_CN.h>
+  QuectelEC200U modem(Serial1, 115200);
+  ```
+- AVR/others with SoftwareSerial: create and `begin()` the stream yourself, then pass to the `Stream` constructor.
+  ```cpp
+  #include <SoftwareSerial.h>
+  #include <QuectelEC200U_CN.h>
+  SoftwareSerial ss(7, 8); // RX, TX
+  QuectelEC200U modem(ss);
+  void setup() {
+    ss.begin(9600);
+    modem.begin();
+  }
+  ```
+
 ## Features
 - SIM/registration, PDP attach/activation
 - TCP sockets (QIOPEN/QISEND/QIRD), SSL/TLS (QSSLCFG/QSSLOPEN)

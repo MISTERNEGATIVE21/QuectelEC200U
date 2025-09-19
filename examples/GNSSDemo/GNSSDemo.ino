@@ -1,40 +1,33 @@
-#include <QuectelEC200U_CN.h>
+#include <QuectelEC200U.h>
 
-QuectelEC200U modem(Serial1, 115200);
+// For ESP32/ESP8266 or other boards with a second hardware serial
+HardwareSerial& modemSerial = Serial1;
+QuectelEC200U modem(modemSerial);
+
+// --- OR ---
+// For boards like Arduino Uno, use SoftwareSerial
+// #include <SoftwareSerial.h>
+// SoftwareSerial modemSerial(7, 8); // RX, TX
+// QuectelEC200U modem(modemSerial);
+
 
 void setup() {
   Serial.begin(115200);
-  delay(300);
-  Serial.println("GNSS demo");
+  
+  // Initialize your chosen serial port
+  modemSerial.begin(115200);
 
+  // Initialize the modem
   modem.begin();
 
   Serial.println("Starting GNSS...");
-  if (!modem.startGNSS()) {
-    Serial.println("Failed to start GNSS");
-    return;
-  }
-
-  // Optionally configure GNSS (uncomment as needed)
-  // modem.setGNSSConfig("nmeasrc", "1"); // output over AT channel
-
-  // Wait up to 60s for a fix using getGNSSLocation(wait)
-  String loc = modem.getGNSSLocation(60000);
-  if (loc.length() == 0) {
-    Serial.println("No fix within timeout");
+  if (modem.startGNSS()) {
+    delay(2000); // wait briefly for a fix (demo)
+    Serial.println("Reading GNSS location...");
+    Serial.println(modem.getGNSSLocation());
   } else {
-    Serial.println("GNSS Location:");
-    Serial.println(loc);
+    Serial.println("Failed to start GNSS");
   }
-
-  // Read a few NMEA sentences
-  Serial.println("NMEA RMC:");
-  Serial.println(modem.getNMEASentence("RMC"));
-  Serial.println("NMEA GGA:");
-  Serial.println(modem.getNMEASentence("GGA"));
-
-  // Stop GNSS to save power
-  modem.stopGNSS();
 }
 
 void loop() {

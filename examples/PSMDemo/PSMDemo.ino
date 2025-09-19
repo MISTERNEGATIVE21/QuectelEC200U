@@ -1,16 +1,31 @@
-#include <QuectelEC200U_CN.h>
+#include <QuectelEC200U.h>
 
-QuectelEC200U modem(Serial1, 115200);
+// For ESP32/ESP8266 or other boards with a second hardware serial
+HardwareSerial& modemSerial = Serial1;
+QuectelEC200U modem(modemSerial);
+
+// --- OR ---
+// For boards like Arduino Uno, use SoftwareSerial
+// #include <SoftwareSerial.h>
+// SoftwareSerial modemSerial(7, 8); // RX, TX
+// QuectelEC200U modem(modemSerial);
+
 
 void setup() {
   Serial.begin(115200);
+  
+  // Initialize your chosen serial port
+  modemSerial.begin(115200);
+
+  // Initialize the modem
   modem.begin();
 
-  Serial.println("Enabling PSM (Power Saving Mode)...");
-  if (modem.enablePSM(true))
+  Serial.println("Enabling PSM...");
+  if (modem.enablePSM(true)) {
     Serial.println("PSM enabled");
-  else
+  } else {
     Serial.println("Failed to enable PSM");
+  }
 }
 
 void loop() {}

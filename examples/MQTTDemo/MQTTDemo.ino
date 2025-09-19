@@ -1,22 +1,31 @@
-#include <QuectelEC200U_CN.h>
+#include <QuectelEC200U.h>
 
-QuectelEC200U modem(Serial1, 115200);
+// For ESP32/ESP8266 or other boards with a second hardware serial
+HardwareSerial& modemSerial = Serial1;
+QuectelEC200U modem(modemSerial);
+
+// --- OR ---
+// For boards like Arduino Uno, use SoftwareSerial
+// #include <SoftwareSerial.h>
+// SoftwareSerial modemSerial(7, 8); // RX, TX
+// QuectelEC200U modem(modemSerial);
+
 
 void setup() {
   Serial.begin(115200);
+  
+  // Initialize your chosen serial port
+  modemSerial.begin(115200);
+
+  // Initialize the modem
   modem.begin();
 
-  Serial.println("Connecting to MQTT broker...");
-  if (modem.mqttConnect("broker.hivemq.com", 1883)) {
-    Serial.println("MQTT connected");
-
-    modem.mqttSubscribe("test/topic");
-    modem.mqttPublish("test/topic", "Hello from EC200U + Arduino");
+  Serial.println("Connecting to MQTT...");
+  if (modem.mqttConnect("test.mosquitto.org", 1883)) {
+    modem.mqttPublish("/quectel/topic", "Hello from EC200U");
   } else {
-    Serial.println("MQTT failed");
+    Serial.println("MQTT connection failed");
   }
 }
 
-void loop() {
-  // In real usage, you’d parse URCs for incoming messages here
-}
+void loop() {}
