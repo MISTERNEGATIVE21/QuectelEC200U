@@ -4,19 +4,38 @@ QuectelEC200U modem(Serial1, 115200);
 
 void setup() {
   Serial.begin(115200);
+  delay(300);
+  Serial.println("GNSS demo");
+
   modem.begin();
 
-  Serial.println("Connecting to MQTT broker...");
-  if (modem.mqttConnect("broker.hivemq.com", 1883)) {
-    Serial.println("MQTT connected");
-
-    modem.mqttSubscribe("test/topic");
-    modem.mqttPublish("test/topic", "Hello from EC200U + Arduino");
-  } else {
-    Serial.println("MQTT failed");
+  Serial.println("Starting GNSS...");
+  if (!modem.startGNSS()) {
+    Serial.println("Failed to start GNSS");
+    return;
   }
+
+  // Optionally configure GNSS (uncomment as needed)
+  // modem.setGNSSConfig("nmeasrc", "1"); // output over AT channel
+
+  // Wait up to 60s for a fix using getGNSSLocation(wait)
+  String loc = modem.getGNSSLocation(60000);
+  if (loc.length() == 0) {
+    Serial.println("No fix within timeout");
+  } else {
+    Serial.println("GNSS Location:");
+    Serial.println(loc);
+  }
+
+  // Read a few NMEA sentences
+  Serial.println("NMEA RMC:");
+  Serial.println(modem.getNMEASentence("RMC"));
+  Serial.println("NMEA GGA:");
+  Serial.println(modem.getNMEASentence("GGA"));
+
+  // Stop GNSS to save power
+  modem.stopGNSS();
 }
 
 void loop() {
-  // In real usage, you’d parse URCs for incoming messages here
 }
