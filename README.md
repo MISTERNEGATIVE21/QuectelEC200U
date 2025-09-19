@@ -2,6 +2,8 @@
 
 Arduino library for Quectel EC200U (CN-AA firmware) providing a robust AT-command wrapper and advanced examples.
 
+Repository: https://github.com/misternegative21Quaanctelec200u
+
 ## Features
 - SIM/registration, PDP attach/activation
 - TCP sockets (QIOPEN/QISEND/QIRD), SSL/TLS (QSSLCFG/QSSLOPEN)
@@ -48,6 +50,9 @@ See `examples/advance` and `examples/GNSSDemo`.
 
 ## Contributing
 PRs welcome. Please keep examples minimal and add documentation.
+
+## Maintainer
+MisterNegative21 <misternegative21@gmail.com>
 
 ## License
 MIT. See LICENSE.
