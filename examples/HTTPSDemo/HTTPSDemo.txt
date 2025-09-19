@@ -1,0 +1,18 @@
+﻿#include <QuectelEC200U.h>
+
+QuectelEC200U modem(Serial1, 115200);
+
+void setup() {
+  Serial.begin(115200);
+  modem.begin();
+
+  String response;
+  if (modem.httpsGet("https://example.com", response)) {
+    Serial.println("HTTPS Response:");
+    Serial.println(response);
+  } else {
+    Serial.println("HTTPS request failed");
+  }
+}
+
+void loop() {}
