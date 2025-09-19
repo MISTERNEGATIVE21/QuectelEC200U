@@ -1,4 +1,4 @@
-#include <QuectelEC200U.h>
+#include <QuectelEC200U_CN.h>
 
 // Power Saving demo: PSM via CPSMS and eDRX via CEDRXS
 

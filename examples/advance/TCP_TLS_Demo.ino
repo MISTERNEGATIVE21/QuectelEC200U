@@ -1,4 +1,4 @@
-#include <QuectelEC200U.h>
+#include <QuectelEC200U_CN.h>
 
 // Raw SSL socket demo using QSSLOPEN/QSSLSEND/QSSLRECV
 // Note: Command names/parameters may vary by firmware build. Adjust if needed.

@@ -1,4 +1,4 @@
-#include <QuectelEC200U.h>
+#include <QuectelEC200U_CN.h>
 
 // NTP/Time demo: sync time and read RTC
 

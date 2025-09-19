@@ -2,7 +2,7 @@
 
 Arduino library for Quectel EC200U (CN-AA firmware) providing a robust AT-command wrapper and advanced examples.
 
-Repository: https://github.com/misternegative21Quaanctelec200u
+Repository: https://github.com/MISTERNEGATIVE21/QuectelEC200U_CN
 
 ## Features
 - SIM/registration, PDP attach/activation
@@ -18,7 +18,7 @@ Repository: https://github.com/misternegative21Quaanctelec200u
 
 ## Usage
 ```cpp
-#include <QuectelEC200U.h>
+#include <QuectelEC200U_CN.h>
 
 QuectelEC200U modem(Serial1, 115200);
 

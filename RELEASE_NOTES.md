@@ -13,5 +13,5 @@ Breaking changes
 - Set your APN and TLS CA paths in the examples before running.
 
 Links
-- Repository: https://github.com/misternegative21Quaanctelec200u
+- Repository: https://github.com/MISTERNEGATIVE21/QuectelEC200U_CN
 - Changelog: ./CHANGELOG.md

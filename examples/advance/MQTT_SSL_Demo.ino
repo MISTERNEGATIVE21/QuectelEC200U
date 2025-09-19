@@ -1,4 +1,4 @@
-#include <QuectelEC200U.h>
+#include <QuectelEC200U_CN.h>
 
 // Advanced MQTT over SSL: map MQTT client to SSL ctx and connect to 8883
 

@@ -1,4 +1,4 @@
-#include <QuectelEC200U.h>
+#include <QuectelEC200U_CN.h>
 
 QuectelEC200U modem(Serial1, 115200);
 

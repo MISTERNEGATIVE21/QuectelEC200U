@@ -1,4 +1,4 @@
-#include <QuectelEC200U.h>
+#include <QuectelEC200U_CN.h>
 
 // Filesystem demo: upload a CA file, list directory, read back
 

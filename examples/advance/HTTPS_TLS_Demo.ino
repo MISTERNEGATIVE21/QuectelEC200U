@@ -1,4 +1,4 @@
-#include <QuectelEC200U.h>
+#include <QuectelEC200U_CN.h>
 
 // Advanced HTTPS + TLS demo: uploads a CA cert (optional), configures SSL ctx, performs HTTPS GET
 
