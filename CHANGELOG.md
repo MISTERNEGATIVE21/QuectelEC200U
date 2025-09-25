@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.0 - 2025-09-25
+- Examples: added Bluetooth_and_WiFi_Demo (combined Bluetooth + Wi‑Fi) and Advance/WiFi_Generic_Demo (probes module Wi‑Fi AT support; falls back to ESP32 native WiFi).
+- Examples naming: normalized folders and .ino filenames to {Name_Demo} pattern (e.g., Voice_Call_Demo/Voice_Call_Demo.ino). This improves Arduino IDE discovery and consistency.
+- Notes: module Wi‑Fi AT commands may not be available on all EC200U variants; demos print ERROR if unsupported, which is expected.
+- Breaking changes: none; additions are backward compatible.
+
 ## 1.3.0 - 2025-09-20
 - Cross-board serial support: added HardwareSerial constructor with optional RX/TX pins (ESP32 auto-configured in begin) and a generic Stream constructor for SoftwareSerial/USB CDC.
 - Examples standardized to work on ESP32 (HardwareSerial) and classic boards (SoftwareSerial). All .ino files select the appropriate serial at compile time and initialize it before modem.begin().
