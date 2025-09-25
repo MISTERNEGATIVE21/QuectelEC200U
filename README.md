@@ -1,8 +1,12 @@
-# QuectelEC200U_CN
+# QuectelEC200U_CN Module
+
+![EC200U circuit overview](./circuit_image.png)
 
 Arduino library for Quectel EC200U (CN-AA firmware) providing a robust AT-command wrapper and advanced examples.
 
-Repository: [https://github.com/misternegative21Quaanctelec200u](https://github.com/MISTERNEGATIVE21/QuectelEC200U)
+Repository: [https://github.com/MISTERNEGATIVE21/QuectelEC200U](https://github.com/MISTERNEGATIVE21/QuectelEC200U)
+
+More information on Custom ESP32-S3 with EC200U: [Sharvi Electronics ESP32-S3 with EC200U](https://github.com/SharviElectronics/ESP32-S3-with-EC200U/tree/main)
 
 ## Features
 - SIM/registration, PDP attach/activation
