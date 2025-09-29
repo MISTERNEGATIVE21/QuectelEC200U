@@ -42,12 +42,23 @@ More information on Custom ESP32-S3 with EC200U: [Sharvi Electronics ESP32-S3 wi
 ```cpp
 #include <QuectelEC200U.h>
 
-HardwareSerial& modemSerial = Serial1; // or SoftwareSerial as shown above
-QuectelEC200U modem(modemSerial);
+#if defined(ARDUINO_ARCH_ESP32)
+#include "src/EC200U_ESP32_Config.h"
+HardwareSerial& SerialAT = EC200U_UART;
+QuectelEC200U modem(SerialAT, 115200, EC200U_RX, EC200U_TX);
+#else
+#include <SoftwareSerial.h>
+SoftwareSerial SerialAT(7, 8);
+QuectelEC200U modem(SerialAT);
+#endif
 
 void setup() {
   Serial.begin(115200);
-  modemSerial.begin(115200);
+#if defined(ARDUINO_ARCH_ESP32)
+  EC200U_powerOn();
+#else
+  SerialAT.begin(9600);
+#endif
   modem.begin();
   modem.attachData("your.apn");
   modem.activatePDP(1);
@@ -100,3 +111,26 @@ MIT. See LICENSE.
 
 ## Trademarks & Attribution
 Quectel, EC200U, and related marks are trademarks or registered trademarks of Quectel Wireless Solutions Co., Ltd. This library is unofficial and not affiliated with Quectel.
+
+#pragma once
+#if defined(ARDUINO_ARCH_ESP32)
+  #ifndef EC200U_RX
+  #define EC200U_RX 18    // ESP32 pin connected to EC200U TX
+  #endif
+  #ifndef EC200U_TX
+  #define EC200U_TX 17    // ESP32 pin connected to EC200U RX
+  #endif
+  #ifndef PW_KEY
+  #define PW_KEY   10     // EC200U PWRKEY control (active LOW to power on)
+  #endif
+
+  // Use UART2 on ESP32
+  #define EC200U_UART Serial2
+
+  // Optional helper to assert PWRKEY low and wait for boot
+  inline void EC200U_powerOn() {
+    pinMode(PW_KEY, OUTPUT);
+    digitalWrite(PW_KEY, LOW);
+    delay(3000);
+  }
+#endif

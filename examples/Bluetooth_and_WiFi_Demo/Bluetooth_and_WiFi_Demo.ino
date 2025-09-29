@@ -2,14 +2,9 @@
 
 #if defined(ARDUINO_ARCH_ESP32)
 #include <WiFi.h>
-HardwareSerial SerialAT(1);
-#ifndef AT_RX_PIN
-#define AT_RX_PIN 16
-#endif
-#ifndef AT_TX_PIN
-#define AT_TX_PIN 17
-#endif
-QuectelEC200U modem(SerialAT, 115200, AT_RX_PIN, AT_TX_PIN);
+#include "../../src/EC200U_ESP32_Config.h"
+HardwareSerial& SerialAT = EC200U_UART; // Serial2
+QuectelEC200U modem(SerialAT, 115200, EC200U_RX, EC200U_TX);
 #else
 #include <SoftwareSerial.h>
 SoftwareSerial SerialAT(7, 8);
@@ -75,7 +70,9 @@ static void esp32WiFiConnect(const char* ssid, const char* pass) {
 
 void setup() {
   Serial.begin(115200);
-#if !defined(ARDUINO_ARCH_ESP32)
+#if defined(ARDUINO_ARCH_ESP32)
+  EC200U_powerOn();
+#else
   SerialAT.begin(9600);
 #endif
   modem.begin();
