@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.0 - 2025-09-30
+- ESP32 standardization: all examples now use Serial2 with default pins EC200U_RX=18, EC200U_TX=17 and PW_KEY=10 via a new shared header `src/EC200U_ESP32_Config.h` (includes EC200U_powerOn helper).
+- Examples updated: HTTP, HTTPS, MQTT, NTP Sync, GNSS, FTP, Audio Setup, SMS, TCP, TTS, Voice Call, Bluetooth_and_WiFi switched to Serial2 config and cleaned legacy includes.
+- Docs: README updated to show the circuit image, corrected repository link, and added “More information” link to the ESP32‑S3 with EC200U reference project.
+- Breaking changes: none; library API unchanged. Non‑ESP32 boards continue to use SoftwareSerial paths.
+
 ## 1.4.0 - 2025-09-25
 - Examples: added Bluetooth_and_WiFi_Demo (combined Bluetooth + Wi‑Fi) and Advance/WiFi_Generic_Demo (probes module Wi‑Fi AT support; falls back to ESP32 native WiFi).
 - Examples naming: normalized folders and .ino filenames to {Name_Demo} pattern (e.g., Voice_Call_Demo/Voice_Call_Demo.ino). This improves Arduino IDE discovery and consistency.
