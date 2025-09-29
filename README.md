@@ -111,26 +111,3 @@ MIT. See LICENSE.
 
 ## Trademarks & Attribution
 Quectel, EC200U, and related marks are trademarks or registered trademarks of Quectel Wireless Solutions Co., Ltd. This library is unofficial and not affiliated with Quectel.
-
-#pragma once
-#if defined(ARDUINO_ARCH_ESP32)
-  #ifndef EC200U_RX
-  #define EC200U_RX 18    // ESP32 pin connected to EC200U TX
-  #endif
-  #ifndef EC200U_TX
-  #define EC200U_TX 17    // ESP32 pin connected to EC200U RX
-  #endif
-  #ifndef PW_KEY
-  #define PW_KEY   10     // EC200U PWRKEY control (active LOW to power on)
-  #endif
-
-  // Use UART2 on ESP32
-  #define EC200U_UART Serial2
-
-  // Optional helper to assert PWRKEY low and wait for boot
-  inline void EC200U_powerOn() {
-    pinMode(PW_KEY, OUTPUT);
-    digitalWrite(PW_KEY, LOW);
-    delay(3000);
-  }
-#endif
