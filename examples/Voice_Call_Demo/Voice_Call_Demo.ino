@@ -1,6 +1,6 @@
 #include <QuectelEC200U.h>
 #if defined(ARDUINO_ARCH_ESP32)
-#include "../../src/EC200U_ESP32_Config.h"
+#include <EC200U_ESP32_Config.h>
 HardwareSerial& SerialAT = EC200U_UART; // Serial2
 QuectelEC200U modem(SerialAT, 115200, EC200U_RX, EC200U_TX);
 #else
