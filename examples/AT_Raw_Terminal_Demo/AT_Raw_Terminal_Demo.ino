@@ -29,19 +29,35 @@
   For complete details, refer to the official "Quectel EC200U AT Commands Manual" for your firmware.
 */
 
+// Set the EC200U modem RX and TX pins
+#define EC200U_RX_PIN 18
+#define EC200U_TX_PIN 17
+
+// Set the EC200U modem power key pin
+#define EC200U_PW_KEY_PIN 10
+
+// Set the EC200U modem power status pin
+#define EC200U_STATUS_PIN 2
+
 #if defined(ARDUINO_ARCH_ESP32)
-#include <EC200U_ESP32_Config.h> // EC200U_RX=18, EC200U_TX=17, PW_KEY=10 and EC200U_powerOn()
+void EC200U_powerOn() {
+  pinMode(EC200U_PW_KEY_PIN, OUTPUT);
+  pinMode(EC200U_STATUS_PIN, INPUT);
+
+  // Check if the modem is already on
+  if (digitalRead(EC200U_STATUS_PIN) == LOW) {
+    // Power on the modem
+    digitalWrite(EC200U_PW_KEY_PIN, LOW);
+    delay(500);
+    digitalWrite(EC200U_PW_KEY_PIN, HIGH);
+    delay(3000);
+  }
+}
 #endif
 
 #if !defined(ARDUINO_ARCH_ESP32)
 #include <SoftwareSerial.h>
-#ifndef AT_RX_PIN
-#define AT_RX_PIN 7
-#endif
-#ifndef AT_TX_PIN
-#define AT_TX_PIN 8
-#endif
-SoftwareSerial SerialAT(AT_RX_PIN, AT_TX_PIN);
+SoftwareSerial SerialAT(EC200U_RX_PIN, EC200U_TX_PIN);
 #endif
 
 void setup() {
@@ -50,7 +66,7 @@ void setup() {
 #if defined(ARDUINO_ARCH_ESP32)
   // Power on EC200U and start UART2 with standard pins
   EC200U_powerOn();
-  Serial2.begin(115200, SERIAL_8N1, EC200U_RX, EC200U_TX);
+  Serial2.begin(115200, SERIAL_8N1, EC200U_RX_PIN, EC200U_TX_PIN);
 #else
   // Start software serial (many AVR boards are more reliable at 9600)
   SerialAT.begin(9600);

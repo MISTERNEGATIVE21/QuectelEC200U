@@ -1,15 +1,13 @@
 #include <QuectelEC200U.h>
 
+// Set the EC200U modem RX and TX pins
+#define EC200U_RX_PIN 16
+#define EC200U_TX_PIN 17
+
 #if defined(ARDUINO_ARCH_ESP32)
 #include <WiFi.h>
 HardwareSerial SerialAT(1);
-#ifndef AT_RX_PIN
-#define AT_RX_PIN 16
-#endif
-#ifndef AT_TX_PIN
-#define AT_TX_PIN 17
-#endif
-QuectelEC200U modem(SerialAT, 115200, AT_RX_PIN, AT_TX_PIN);
+QuectelEC200U modem(SerialAT, 115200, EC200U_RX_PIN, EC200U_TX_PIN);
 #else
 #include <SoftwareSerial.h>
 SoftwareSerial SerialAT(7, 8);
