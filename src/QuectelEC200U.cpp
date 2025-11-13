@@ -591,7 +591,7 @@ bool QuectelEC200U::attachData(const String &apn, const String &user, const Stri
   // Configure authentication if provided
   if (user.length() > 0) {
     logDebug(F("Configuring PDP authentication..."));
-    String authCmd = F("AT+QICSGP=1,1,\"") + apn + F("\",\"") + user + F("\",\"") + pass + F("\",") + String(auth);
+    String authCmd = "AT+QICSGP=1,1,\"" + apn + "\",\"" + user + "\",\"" + pass + "\"," + String(auth);
     
     flushInput();
     _serial->println(authCmd);
