@@ -10,8 +10,7 @@
 */
 
 #include "QuectelEC200U.h"
-#include <ArduinoJson.h> // Include for JSON parsing
-#include <ArduinoJson.h> // Include for JSON parsing
+#include <ArduinoJson.h>
 
 QuectelEC200U::QuectelEC200U(HardwareSerial &serial, uint32_t baud, int8_t rxPin, int8_t txPin) {
   _serial = &serial;

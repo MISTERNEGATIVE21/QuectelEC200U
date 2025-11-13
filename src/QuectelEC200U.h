@@ -13,6 +13,7 @@
 #define QUECTEL_EC200U_H
 
 #include <Arduino.h>
+#include <ArduinoJson.h>
 
 // Command history for Ctrl+Z functionality
 #define MAX_HISTORY 20
