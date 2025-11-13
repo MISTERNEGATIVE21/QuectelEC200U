@@ -1,0 +1,41 @@
+# C++
+*.o
+*.a
+*.so
+*.lo
+*.la
+*.dll
+*.exe
+*.out
+*.app
+*.i
+*.ii
+*.gch
+*.pch
+build/
+bin/
+obj/
+
+# Arduino
+*.elf
+*.eep
+*.hex
+*.bin
+*.lss
+*.sym
+*.map
+*.bak
+*.tmp
+*~
+*.log
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# VSCode
+.vscode/
+
+# Other
+.DS_Store
+Thumbs.db

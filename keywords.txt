@@ -1,51 +1,80 @@
+#######################################
+# Syntax Coloring Map For QuectelEC200U
+#######################################
+
+#######################################
+# Class (KEYWORD1)
+#######################################
+
 QuectelEC200U	KEYWORD1
 
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
 begin	KEYWORD2
+enableDebug	KEYWORD2
+sendAT	KEYWORD2
 sendCommand	KEYWORD2
 readResponse	KEYWORD2
+getState	KEYWORD2
+isInitialized	KEYWORD2
+isNetworkReady	KEYWORD2
+setState	KEYWORD2
+getIMEI	KEYWORD2
+getSignalStrength	KEYWORD2
+setAPN	KEYWORD2
+getModemInfo	KEYWORD2
+factoryReset	KEYWORD2
 waitForNetwork	KEYWORD2
 attachData	KEYWORD2
 activatePDP	KEYWORD2
 deactivatePDP	KEYWORD2
 getRegistrationStatus	KEYWORD2
 isSimReady	KEYWORD2
-
-httpGet	KEYWORD2
-httpPost	KEYWORD2
-httpsGet	KEYWORD2
-httpsPost	KEYWORD2
-
-mqttConnect	KEYWORD2
-mqttPublish	KEYWORD2
-mqttSubscribe	KEYWORD2
-
-startGNSS	KEYWORD2
-stopGNSS	KEYWORD2
-isGNSSOn	KEYWORD2
-setGNSSConfig	KEYWORD2
-getGNSSLocation	KEYWORD2
-getNMEASentence	KEYWORD2
-
-fsList	KEYWORD2
-fsUpload	KEYWORD2
-fsRead	KEYWORD2
-fsDelete	KEYWORD2
-
-sslConfigure	KEYWORD2
-ntpSync	KEYWORD2
-getClock	KEYWORD2
-setClock	KEYWORD2
-
-enablePSM	KEYWORD2
-
-// Voice Call
+getOperator	KEYWORD2
+sendSMS	KEYWORD2
+readSMS	KEYWORD2
+deleteSMS	KEYWORD2
+getSMSCount	KEYWORD2
 dial	KEYWORD2
 hangup	KEYWORD2
 answer	KEYWORD2
 getCallList	KEYWORD2
 enableCallerId	KEYWORD2
-
-// Audio
+httpGet	KEYWORD2
+httpPost	KEYWORD2
+httpsGet	KEYWORD2
+httpsPost	KEYWORD2
+mqttConnect	KEYWORD2
+mqttPublish	KEYWORD2
+mqttSubscribe	KEYWORD2
+mqttDisconnect	KEYWORD2
+tcpOpen	KEYWORD2
+tcpSend	KEYWORD2
+tcpRecv	KEYWORD2
+tcpClose	KEYWORD2
+sendUSSD	KEYWORD2
+ntpSync	KEYWORD2
+getClock	KEYWORD2
+setClock	KEYWORD2
+startGNSS	KEYWORD2
+stopGNSS	KEYWORD2
+isGNSSOn	KEYWORD2
+setGNSSConfig	KEYWORD2
+getNMEASentence	KEYWORD2
+getGNSSLocation	KEYWORD2
+playTTS	KEYWORD2
+ftpLogin	KEYWORD2
+ftpDownload	KEYWORD2
+ftpLogout	KEYWORD2
+fsList	KEYWORD2
+fsUpload	KEYWORD2
+fsRead	KEYWORD2
+fsDelete	KEYWORD2
+fsExists	KEYWORD2
+sslConfigure	KEYWORD2
+enablePSM	KEYWORD2
 setSpeakerVolume	KEYWORD2
 setRingerVolume	KEYWORD2
 setMicMute	KEYWORD2
@@ -54,3 +83,25 @@ setSidetone	KEYWORD2
 setAudioChannel	KEYWORD2
 setAudioInterface	KEYWORD2
 audioLoopback	KEYWORD2
+addToHistory	KEYWORD2
+getFromHistory	KEYWORD2
+getPreviousCommand	KEYWORD2
+getNextCommand	KEYWORD2
+getHistoryCount	KEYWORD2
+clearHistory	KEYWORD2
+powerOff	KEYWORD2
+reboot	KEYWORD2
+extractQuotedString	KEYWORD2
+extractInteger	KEYWORD2
+waitForResponse	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
+MODEM_UNINITIALIZED	LITERAL1
+MODEM_INITIALIZING	LITERAL1
+MODEM_READY	LITERAL1
+MODEM_ERROR	LITERAL1
+MODEM_NETWORK_CONNECTED	LITERAL1
+MODEM_DATA_READY	LITERAL1
