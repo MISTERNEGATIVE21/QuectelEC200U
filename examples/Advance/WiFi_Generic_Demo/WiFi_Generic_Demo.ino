@@ -10,7 +10,7 @@ HardwareSerial SerialAT(1);
 QuectelEC200U modem(SerialAT, 115200, EC200U_RX_PIN, EC200U_TX_PIN);
 #else
 #include <SoftwareSerial.h>
-SoftwareSerial SerialAT(7, 8);
+SoftwareSerial SerialAT(EC200U_RX_PIN, EC200U_TX_PIN);
 QuectelEC200U modem(SerialAT);
 #endif
 
