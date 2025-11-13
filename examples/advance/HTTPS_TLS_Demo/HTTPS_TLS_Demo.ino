@@ -1,4 +1,5 @@
 #include <QuectelEC200U.h>
+#include "ca_cert.h"
 
 // Set the EC200U modem RX and TX pins
 #define EC200U_RX_PIN 16
@@ -13,6 +14,8 @@ SoftwareSerial SerialAT(7, 8);
 QuectelEC200U modem(SerialAT);
 #endif
 
+const char* cert_path = "cloudflare_ca.pem";
+
 void setup() {
   Serial.begin(115200);
 #if !defined(ARDUINO_ARCH_ESP32)
@@ -24,19 +27,25 @@ void setup() {
   modem.attachData("your.apn");
   modem.activatePDP(1);
 
+  // Upload the Cloudflare CA certificate to the module's filesystem
+  Serial.println("Uploading Cloudflare CA certificate...");
+  if (modem.fsUpload(cert_path, cloudflare_ca_cert)) {
+    Serial.println("Certificate uploaded.");
+  } else {
+    Serial.println("Failed to upload certificate.");
+  }
+
   // Before making an HTTPS request, you must configure the SSL context.
   // This includes setting the path to your CA certificate on the module's filesystem.
-  // Upload your CA certificate to the module's filesystem first.
-  // In this example, we assume the certificate is named "cacert.pem".
-  if (modem.sslConfigure(1, "cacert.pem")) {
+  if (modem.sslConfigure(1, cert_path)) {
     Serial.println("SSL context configured.");
   } else {
     Serial.println("Failed to configure SSL context.");
   }
 
   String resp;
-  Serial.println("HTTPS GET...");
-  if (modem.httpsGet("https://example.com", resp)) {
+  Serial.println("HTTPS GET from Cloudflare...");
+  if (modem.httpsGet("https://www.cloudflare.com/", resp)) {
     Serial.println("OK");
     Serial.println(resp);
   } else {
