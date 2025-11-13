@@ -1,6 +1,6 @@
-
 #include <QuectelEC200U.h>
 #include <ArduinoJson.h>
+#include "ca_cert.h"
 
 // Set the EC200U modem RX and TX pins
 #define EC200U_RX_PIN 16
@@ -62,87 +62,9 @@ const char* sensor4_data = "";
 const char* sensor5_info = "";
 const char* sensor5_data = "";
 
-bool modemInitialized = false;
+const char* cert_path = "consentium_ca.pem";
 
-void setup() {
-  // Initialize Serial Monitor with delay for stability
-  Serial.begin(115200);
-  delay(2000);  // Give time for Serial Monitor to connect
-  
-  Serial.println();
-  Serial.println("======================================");
-  Serial.println("  Consentium IoT Demo - Starting");
-  Serial.println("======================================");
-  Serial.println();
-
-#if defined(ARDUINO_ARCH_ESP32)
-  EC200U_powerOn();
-#else
-  Serial.println("Initializing SoftwareSerial...");
-  SerialAT.begin(9600);
-#endif
-
-  Serial.println("Enabling modem debug output...");
-  modem.enableDebug(Serial);
-
-  // Skip initialization if already done
-  if (!modemInitialized) {
-    Serial.println("Initializing modem (this may take 10-15 seconds)...");
-    if (!modem.begin()) {
-      Serial.println("❌ Failed to initialize modem!");
-      Serial.println("⚠️  Possible issues:");
-      Serial.println("   - Check wiring (RX/TX pins)");
-      Serial.println("   - Check modem power");
-      Serial.println("   - Check SIM card");
-      Serial.println();
-      Serial.println("Waiting 30 seconds before retry...");
-      delay(30000);
-      return;  // Don't enter infinite loop, just return
-    }
-    modemInitialized = true;
-    Serial.println("✓ Modem initialized successfully");
-  } else {
-    Serial.println("✓ Using already initialized modem");
-  }
-
-  Serial.println();
-  Serial.println("Waiting for network registration...");
-  if (!modem.waitForNetwork(30000)) {
-    Serial.println("❌ Failed to connect to network");
-    Serial.println("⚠️  Check:");
-    Serial.println("   - SIM card is inserted");
-    Serial.println("   - Network coverage in your area");
-    Serial.println("   - SIM card has active service");
-    Serial.println();
-    Serial.println("Waiting 30 seconds before retry...");
-    delay(30000);
-    return;
-  }
-  Serial.println("✓ Network registered");
-
-  Serial.println();
-  Serial.println("Attaching to data network...");
-  if (!modem.attachData(apn)) {
-    Serial.println("❌ Failed to attach to data network");
-    Serial.println("⚠️  Check APN settings for your operator");
-    Serial.println();
-    Serial.println("Waiting 30 seconds before retry...");
-    delay(30000);
-    return;
-  }
-  Serial.println("✓ Attached to data network");
-
-  Serial.println();
-  Serial.println("Activating PDP context...");
-  if (!modem.activatePDP()) {
-    Serial.println("❌ Failed to activate PDP context!");
-    Serial.println();
-    Serial.println("Waiting 30 seconds before retry...");
-    delay(30000);
-    return;
-  }
-  Serial.println("✓ PDP context activated");
-
+void sendData() {
   // Construct the JSON payload dynamically using ArduinoJson
   Serial.println();
   Serial.println("Constructing JSON payload...");
@@ -244,6 +166,87 @@ void setup() {
     Serial.println("   - API credentials (sendKey, boardKey)");
     Serial.println("   - API endpoint URL");
   }
+}
+
+void setup() {
+  // Initialize Serial Monitor with delay for stability
+  Serial.begin(115200);
+  delay(2000);  // Give time for Serial Monitor to connect
+  
+  Serial.println();
+  Serial.println("======================================");
+  Serial.println("  Consentium IoT Demo - Starting");
+  Serial.println("======================================");
+  Serial.println();
+
+#if defined(ARDUINO_ARCH_ESP32)
+  EC200U_powerOn();
+#else
+  Serial.println("Initializing SoftwareSerial...");
+  SerialAT.begin(9600);
+#endif
+
+  Serial.println("Enabling modem debug output...");
+  modem.enableDebug(Serial);
+
+  Serial.println("Initializing modem (this may take 10-15 seconds)...");
+  if (!modem.begin()) {
+    Serial.println("❌ Failed to initialize modem!");
+    Serial.println("⚠️  Possible issues:");
+    Serial.println("   - Check wiring (RX/TX pins)");
+    Serial.println("   - Check modem power");
+    Serial.println("   - Check SIM card");
+    Serial.println();
+    while(1);
+  }
+  Serial.println("✓ Modem initialized successfully");
+
+  Serial.println();
+  Serial.println("Waiting for network registration...");
+  if (!modem.waitForNetwork(30000)) {
+    Serial.println("❌ Failed to connect to network");
+    Serial.println("⚠️  Check:");
+    Serial.println("   - SIM card is inserted");
+    Serial.println("   - Network coverage in your area");
+    Serial.println("   - SIM card has active service");
+    Serial.println();
+    while(1);
+  }
+  Serial.println("✓ Network registered");
+
+  Serial.println();
+  Serial.println("Attaching to data network...");
+  if (!modem.attachData(apn)) {
+    Serial.println("❌ Failed to attach to data network");
+    Serial.println("⚠️  Check APN settings for your operator");
+    Serial.println();
+    while(1);
+  }
+  Serial.println("✓ Attached to data network");
+
+  Serial.println();
+  Serial.println("Activating PDP context...");
+  if (!modem.activatePDP()) {
+    Serial.println("❌ Failed to activate PDP context!");
+    Serial.println();
+    while(1);
+  }
+  Serial.println("✓ PDP context activated");
+
+  // Upload the CA certificate to the module's filesystem
+  Serial.println("Uploading CA certificate...");
+  if (modem.fsUpload(cert_path, cloudflare_ca_cert)) {
+    Serial.println("Certificate uploaded.");
+  } else {
+    Serial.println("Failed to upload certificate.");
+  }
+
+  // Before making an HTTPS request, you must configure the SSL context.
+  if (modem.sslConfigure(1, cert_path)) {
+    Serial.println("SSL context configured.");
+  } else {
+    Serial.println("Failed to configure SSL context.");
+  }
   
   Serial.println();
   Serial.println("======================================");
@@ -258,14 +261,8 @@ void loop() {
   unsigned long currentTime = millis();
   
   if (currentTime - lastSendTime >= 60000) {
-    Serial.println();
-    Serial.println("--------------------------------------");
-    Serial.println("  Periodic data send (60s interval)");
-    Serial.println("--------------------------------------");
     lastSendTime = currentTime;
-    
-    // Re-run data sending
-    setup();
+    sendData();
   }
   
   delay(1000);  // Check every second

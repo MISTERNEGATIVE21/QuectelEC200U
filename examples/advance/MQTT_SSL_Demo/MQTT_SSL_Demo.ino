@@ -1,4 +1,5 @@
 #include <QuectelEC200U.h>
+#include "ca_cert.h"
 
 // Set the EC200U modem RX and TX pins
 #define EC200U_RX_PIN 16
@@ -13,6 +14,8 @@ SoftwareSerial SerialAT(7, 8);
 QuectelEC200U modem(SerialAT);
 #endif
 
+const char* cert_path = "mqtt_ca.pem";
+
 void setup() {
   Serial.begin(115200);
 #if !defined(ARDUINO_ARCH_ESP32)
@@ -23,8 +26,24 @@ void setup() {
   modem.attachData("your.apn");
   modem.activatePDP(1);
 
+  // Upload the CA certificate to the module's filesystem
+  // Note: You should use the correct CA certificate for your MQTT broker
+  Serial.println("Uploading CA certificate...");
+  if (modem.fsUpload(cert_path, cloudflare_ca_cert)) {
+    Serial.println("Certificate uploaded.");
+  } else {
+    Serial.println("Failed to upload certificate.");
+  }
+
+  // Before making an MQTT SSL connection, you must configure the SSL context.
+  if (modem.sslConfigure(1, cert_path)) {
+    Serial.println("SSL context configured.");
+  } else {
+    Serial.println("Failed to configure SSL context.");
+  }
+
   Serial.println("MQTT connect...");
-  if (modem.mqttConnect("broker.hivemq.com", 1883)) {
+  if (modem.mqttConnect("broker.hivemq.com", 8883)) {
     Serial.println("Connected, publishing...");
     modem.mqttPublish("ec200u/test", "hello from EC200U");
   } else {
