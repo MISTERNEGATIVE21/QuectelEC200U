@@ -100,6 +100,12 @@ For users in India, you may need to set the APN (Access Point Name) for your mob
 
 You can use the `getOperator()` function to identify the network and then set the APN accordingly. For a detailed example, see `examples/Indian_APN_Demo/Indian_APN_Demo.ino`.
 
+## PPPoS (Point-to-Point Protocol over Serial)
+
+This library can be used with the `PPPOSClient` library to establish a PPP connection with the EC200U modem. This allows you to use standard networking libraries like `WiFiClient` and `HTTPClient` over the cellular connection.
+
+For a detailed example, see `examples/PPPOS_Demo/PPPOS_Demo.ino`.
+
 ## API Reference
 
 ### Core
