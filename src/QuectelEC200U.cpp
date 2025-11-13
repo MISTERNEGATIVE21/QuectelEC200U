@@ -10,6 +10,7 @@
 */
 
 #include "QuectelEC200U.h"
+#include <ArduinoJson.h> // Include for JSON parsing
 
 QuectelEC200U::QuectelEC200U(HardwareSerial &serial, uint32_t baud, int8_t rxPin, int8_t txPin) {
   _serial = &serial;
@@ -41,6 +42,18 @@ QuectelEC200U::QuectelEC200U(Stream &stream) {
   _networkRegistered = false;
   _historyCount = 0;
   _historyIndex = 0;
+}
+
+// ... (rest of the file) ...
+
+bool QuectelEC200U::parseJson(const String &jsonString, JsonDocument &doc) {
+  DeserializationError error = deserializeJson(doc, jsonString);
+  if (error) {
+    logError(F("JSON deserialization failed: "));
+    logError(error.c_str());
+    return false;
+  }
+  return true;
 }
 
 void QuectelEC200U::enableDebug(Stream &debugStream) {
@@ -288,7 +301,7 @@ void QuectelEC200U::clearHistory() {
   _historyIndex = 0;
 }
 
-// Utility helper functions
+// Utility functions
 String QuectelEC200U::extractQuotedString(const String &response, const String &tag) {
   int tagIdx = response.indexOf(tag);
   if (tagIdx == -1) return "";
@@ -319,6 +332,43 @@ int QuectelEC200U::extractInteger(const String &response, const String &tag) {
   }
   
   return numStr.toInt();
+}
+
+void QuectelEC200U::_sendHttpHeaders(const String &headers) {
+  if (headers.length() == 0) {
+    return;
+  }
+
+  logDebug(F("Sending custom HTTP headers..."));
+  // Enable custom request headers
+  if (!sendAT(F("AT+QHTTPCFG=\"requestheader\",1"))) {
+    logError(F("Failed to enable custom request headers."));
+    return;
+  }
+
+  int headerStart = 0;
+  int headerEnd = -1;
+  do {
+    headerEnd = headers.indexOf('\n', headerStart);
+    String headerLine;
+    if (headerEnd == -1) {
+      headerLine = headers.substring(headerStart);
+    } else {
+      headerLine = headers.substring(headerStart, headerEnd);
+    }
+    headerLine.trim(); // Remove leading/trailing whitespace
+
+    if (headerLine.length() > 0) {
+      // Send each header line. The module expects <CR><LF> at the end of each header.
+      // The sendAT function adds \r\n, so we just need to ensure the headerLine itself is correct.
+      // The AT command format is AT+QHTTPCFG="header","<header_string><CR><LF>"
+      String cmd = "AT+QHTTPCFG=\"header\",\"" + headerLine + "\\r\\n\"";
+      if (!sendAT(cmd)) {
+        logError(F("Failed to send header: ") + headerLine);
+      }
+    }
+    headerStart = headerEnd + 1;
+  } while (headerEnd != -1);
 }
 
 // Modem info functions with better formatting
@@ -666,66 +716,140 @@ String QuectelEC200U::readSMS(int index) {
 }
 
 // ===== HTTP =====
-bool QuectelEC200U::httpGet(const String &url, String &response) {
+bool QuectelEC200U::httpGet(const String &url, String &response, const String &headers) {
   if (!sendAT(F("AT+QHTTPCFG=\"contextid\",1"))) return false;
-  if (!sendAT("AT+QHTTPURL=" + String(url.length()), F("CONNECT"))) return false;
-  _serial->print(url);
-  if (!expectURC(F("OK"), 5000)) return false;
+  
+  _sendHttpHeaders(headers); // Send custom headers if provided
 
-  if (!sendAT(F("AT+QHTTPGET=60"), F("OK"), 15000)) return false;
-  if (!expectURC(F("+QHTTPGET:"), 20000)) return false;
+  if (!sendAT("AT+QHTTPURL=" + String(url.length()), F("CONNECT"))) {
+    sendAT(F("AT+QHTTPCFG=\"requestheader\",0")); // Disable custom headers on failure
+    return false;
+  }
+  _serial->print(url);
+  if (!expectURC(F("OK"), 5000)) {
+    sendAT(F("AT+QHTTPCFG=\"requestheader\",0")); // Disable custom headers on failure
+    return false;
+  }
+
+  if (!sendAT(F("AT+QHTTPGET=60"), F("OK"), 15000)) {
+    sendAT(F("AT+QHTTPCFG=\"requestheader\",0")); // Disable custom headers on failure
+    return false;
+  }
+  if (!expectURC(F("+QHTTPGET:"), 20000)) {
+    sendAT(F("AT+QHTTPCFG=\"requestheader\",0")); // Disable custom headers on failure
+    return false;
+  }
   sendAT(F("AT+QHTTPREAD"));
   response = readResponse(15000);
+  
+  sendAT(F("AT+QHTTPCFG=\"requestheader\",0")); // Disable custom headers after request
   return response.length() > 0 && response.indexOf(F("ERROR")) == -1;
 }
 
-bool QuectelEC200U::httpPost(const String &url, const String &data, String &response) {
+bool QuectelEC200U::httpPost(const String &url, const String &data, String &response, const String &headers) {
   if (!sendAT(F("AT+QHTTPCFG=\"contextid\",1"))) return false;
-  if (!sendAT("AT+QHTTPURL=" + String(url.length()), F("CONNECT"))) return false;
+
+  _sendHttpHeaders(headers); // Send custom headers if provided
+
+  if (!sendAT("AT+QHTTPURL=" + String(url.length()), F("CONNECT"))) {
+    sendAT(F("AT+QHTTPCFG=\"requestheader\",0")); // Disable custom headers on failure
+    return false;
+  }
   _serial->print(url);
-  if (!expectURC(F("OK"), 5000)) return false;
+  if (!expectURC(F("OK"), 5000)) {
+    sendAT(F("AT+QHTTPCFG=\"requestheader\",0")); // Disable custom headers on failure
+    return false;
+  }
 
   String cmd = "AT+QHTTPPOST=" + String(data.length()) + ",60,60";
-  if (!sendAT(cmd, F("CONNECT"))) return false;
+  if (!sendAT(cmd, F("CONNECT"))) {
+    sendAT(F("AT+QHTTPCFG=\"requestheader\",0")); // Disable custom headers on failure
+    return false;
+  }
   _serial->print(data);
-  if (!expectURC(F("OK"), 10000)) return false;
-  if (!expectURC(F("+QHTTPPOST:"), 20000)) return false;
+  if (!expectURC(F("OK"), 10000)) {
+    sendAT(F("AT+QHTTPCFG=\"requestheader\",0")); // Disable custom headers on failure
+    return false;
+  }
+  if (!expectURC(F("+QHTTPPOST:"), 20000)) {
+    sendAT(F("AT+QHTTPCFG=\"requestheader\",0")); // Disable custom headers on failure
+    return false;
+  }
   sendAT(F("AT+QHTTPREAD"));
   response = readResponse(10000);
+
+  sendAT(F("AT+QHTTPCFG=\"requestheader\",0")); // Disable custom headers after request
   return response.indexOf(F("ERROR")) == -1;
 }
 
 // ===== HTTPS =====
-bool QuectelEC200U::httpsGet(const String &url, String &response) {
+bool QuectelEC200U::httpsGet(const String &url, String &response, const String &headers) {
   if (!sendAT(F("AT+QHTTPCFG=\"contextid\",1"))) return false;
   if (!sendAT(F("AT+QHTTPCFG=\"sslctxid\",1"))) return false;
-  // You may need to configure the SSL context first using sslConfigure()
-  if (!sendAT("AT+QHTTPURL=" + String(url.length()), F("CONNECT"))) return false;
-  _serial->print(url);
-  if (!expectURC(F("OK"), 5000)) return false;
+  
+  _sendHttpHeaders(headers); // Send custom headers if provided
 
-  if (!sendAT(F("AT+QHTTPGET=60"), F("OK"), 20000)) return false;
-  if (!expectURC(F("+QHTTPGET:"), 20000)) return false;
+  // You may need to configure the SSL context first using sslConfigure()
+  if (!sendAT("AT+QHTTPURL=" + String(url.length()), F("CONNECT"))) {
+    sendAT(F("AT+QHTTPCFG=\"requestheader\",0")); // Disable custom headers on failure
+    return false;
+  }
+  _serial->print(url);
+  if (!expectURC(F("OK"), 5000)) {
+    sendAT(F("AT+QHTTPCFG=\"requestheader\",0")); // Disable custom headers on failure
+    return false;
+  }
+
+  if (!sendAT(F("AT+QHTTPGET=60"), F("OK"), 20000)) {
+    sendAT(F("AT+QHTTPCFG=\"requestheader\",0")); // Disable custom headers on failure
+    return false;
+  }
+  if (!expectURC(F("+QHTTPGET:"), 20000)) {
+    sendAT(F("AT+QHTTPCFG=\"requestheader\",0")); // Disable custom headers on failure
+    return false;
+  }
   sendAT(F("AT+QHTTPREAD"));
   response = readResponse(20000);
+  
+  sendAT(F("AT+QHTTPCFG=\"requestheader\",0")); // Disable custom headers after request
   return response.length() > 0 && response.indexOf(F("ERROR")) == -1;
 }
 
-bool QuectelEC200U::httpsPost(const String &url, const String &data, String &response) {
+bool QuectelEC200U::httpsPost(const String &url, const String &data, String &response, const String &headers) {
   if (!sendAT(F("AT+QHTTPCFG=\"contextid\",1"))) return false;
   if (!sendAT(F("AT+QHTTPCFG=\"sslctxid\",1"))) return false;
+
+  _sendHttpHeaders(headers); // Send custom headers if provided
+
   // You may need to configure the SSL context first using sslConfigure()
-  if (!sendAT("AT+QHTTPURL=" + String(url.length()), F("CONNECT"))) return false;
+  if (!sendAT("AT+QHTTPURL=" + String(url.length()), F("CONNECT"))) {
+    sendAT(F("AT+QHTTPCFG=\"requestheader\",0")); // Disable custom headers on failure
+    return false;
+  }
   _serial->print(url);
-  if (!expectURC(F("OK"), 5000)) return false;
+  if (!expectURC(F("OK"), 5000)) {
+    sendAT(F("AT+QHTTPCFG=\"requestheader\",0")); // Disable custom headers on failure
+    return false;
+  }
 
   String cmd = "AT+QHTTPPOST=" + String(data.length()) + ",60,60";
-  if (!sendAT(cmd, F("CONNECT"))) return false;
+  if (!sendAT(cmd, F("CONNECT"))) {
+    sendAT(F("AT+QHTTPCFG=\"requestheader\",0")); // Disable custom headers on failure
+    return false;
+  }
   _serial->print(data);
-  if (!expectURC(F("OK"), 10000)) return false;
-  if (!expectURC(F("+QHTTPPOST:"), 20000)) return false;
+  if (!expectURC(F("OK"), 10000)) {
+    sendAT(F("AT+QHTTPCFG=\"requestheader\",0")); // Disable custom headers on failure
+    return false;
+  }
+  if (!expectURC(F("+QHTTPPOST:"), 20000)) {
+    sendAT(F("AT+QHTTPCFG=\"requestheader\",0")); // Disable custom headers on failure
+    return false;
+  }
   sendAT(F("AT+QHTTPREAD"));
   response = readResponse(10000);
+
+  sendAT(F("AT+QHTTPCFG=\"requestheader\",0")); // Disable custom headers after request
   return response.indexOf(F("ERROR")) == -1;
 }
 

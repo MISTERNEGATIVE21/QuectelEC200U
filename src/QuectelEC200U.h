@@ -76,12 +76,12 @@ class QuectelEC200U {
     bool enableCallerId(bool enable);
     
     // HTTP
-    bool httpGet(const String &url, String &response);
-    bool httpPost(const String &url, const String &data, String &response);
+    bool httpGet(const String &url, String &response, const String &headers = "");
+    bool httpPost(const String &url, const String &data, String &response, const String &headers = "");
     
     // HTTPS
-    bool httpsGet(const String &url, String &response);
-    bool httpsPost(const String &url, const String &data, String &response);
+    bool httpsGet(const String &url, String &response, const String &headers = "");
+    bool httpsPost(const String &url, const String &data, String &response, const String &headers = "");
     
     // MQTT
     bool mqttConnect(const String &server, int port);
@@ -159,6 +159,7 @@ class QuectelEC200U {
     String extractQuotedString(const String &response, const String &tag);
     int extractInteger(const String &response, const String &tag);
     bool waitForResponse(const String &expect, uint32_t timeout);
+    bool parseJson(const String &jsonString, JsonDocument &doc);
     
   private:
     Stream *_serial;
@@ -186,6 +187,7 @@ class QuectelEC200U {
     void logDebug(const String &msg);
     void logError(const String &msg);
     void updateNetworkStatus();
+    void _sendHttpHeaders(const String &headers);
 };
 
 #endif
