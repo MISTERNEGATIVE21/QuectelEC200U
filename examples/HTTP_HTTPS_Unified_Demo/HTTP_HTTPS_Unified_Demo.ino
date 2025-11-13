@@ -95,8 +95,9 @@ void setup() {
   // --- HTTP GET Request (Port 80 implicitly) ---
   Serial.println("\n--- Performing HTTP GET request ---");
   String httpResponse;
+  String httpHeaders[] = {"User-Agent: Arduino-HTTP"};
   // Use a known HTTP-only URL for testing
-  if (modem.httpGet("http://example.com", httpResponse)) {
+  if (modem.httpGet("http://example.com", httpResponse, httpHeaders, 1)) {
     Serial.println("HTTP GET successful. Response (first 500 chars):");
     Serial.println(httpResponse.substring(0, min((int)httpResponse.length(), 500)));
   } else {
@@ -106,8 +107,9 @@ void setup() {
   // --- HTTPS GET Request (Port 443 implicitly) ---
   Serial.println("\n--- Performing HTTPS GET request ---");
   String httpsResponse;
+  String httpsHeaders[] = {"User-Agent: Arduino-HTTPS"};
   // Use a known HTTPS URL for testing
-  if (modem.httpsGet("https://www.cloudflare.com/", httpsResponse)) {
+  if (modem.httpsGet("https://www.cloudflare.com/", httpsResponse, httpsHeaders, 1)) {
     Serial.println("HTTPS GET successful. Response (first 500 chars):");
     Serial.println(httpsResponse.substring(0, min((int)httpsResponse.length(), 500)));
   } else {

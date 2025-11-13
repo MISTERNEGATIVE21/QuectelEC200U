@@ -65,7 +65,8 @@ void setup() {
   }
 
   String response;
-  if (modem.httpsGet("https://www.cloudflare.com/", response)) {
+  String headers[] = {"User-Agent: Arduino"};
+  if (modem.httpsGet("https://www.cloudflare.com/", response, headers, 1)) {
     Serial.println("HTTPS Response:");
     Serial.println(response);
   } else {

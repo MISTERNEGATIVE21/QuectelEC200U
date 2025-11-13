@@ -43,7 +43,8 @@ void setup() {
   modem.begin();
 
   String response;
-  if (modem.httpGet("http://example.com", response)) {
+  String headers[] = {"User-Agent: Arduino"};
+  if (modem.httpGet("http://example.com", response, headers, 1)) {
     Serial.println("HTTP Response:");
     Serial.println(response);
   } else {
