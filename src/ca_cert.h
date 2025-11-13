@@ -5,8 +5,7 @@
 #ifndef CA_CERT_H
 #define CA_CERT_H
 
-const char* cloudflare_ca_cert = \
-"-----BEGIN CERTIFICATE-----\n" \
+const char* cloudflare_ca_cert = "-----BEGIN CERTIFICATE-----\n" \
 "MIIEADCCAuigAwIBAgIID+rOSdTGfGcwDQYJKoZIhvcNAQELBQAwgYsxCzAJBgNV\n" \
 "BAYTAlVTMRkwFwYDVQQKExBDbG91ZEZsYXJlLCBJbmMuMTQwMgYDVQQLEytDbG91\n" \
 "ZEZsYXJlIE9yaWdpbiBTU0wgQ2VydGlmaWNhdGUgQXV0aG9yaXR5MRYwFAYDVQQH\n" \
@@ -29,6 +28,6 @@ const char* cloudflare_ca_cert = \
 "hhurjcoacvRNhnjtDRM0dPeiCJ50CP3wEYuvUzDHUaowOsnLCjQIkWbR7Ni6KEIk\n" \
 "MOz2U0OBSif3FTkhCgZWQKOOLo1P42jHC3ssUZAtVNXrCk3fw9/E15k8NPkBazZ6\n" \
 "0iykLhH1trywrKRMVw67F44IE8Y=\n" \
-"-----END CERTIFICATE-----";
+"-----END CERTIFICATE----- ";
 
 #endif // CA_CERT_H

@@ -16,8 +16,6 @@ HardwareSerial& SerialAT = Serial1; // Use Serial1, Serial2, etc. as available
 SoftwareSerial SerialAT(7, 8); // RX, TX
 #endif
 
-QuectelEC200U* modem;
-
 // APN settings for common Indian carriers
 const char* JIO_APN = "jionet";
 const char* AIRTEL_APN = "airtelgprs.com";
@@ -27,14 +25,14 @@ const char* BSNL_APN = "bsnlnet";
 void setup() {
   Serial.begin(115200);
 #if defined(ARDUINO_ARCH_ESP32)
-  modem = new QuectelEC200U(SerialAT);
+  QuectelEC200U modem(SerialAT);
 #else
-  modem = new QuectelEC200U(SerialAT);
+  QuectelEC200U modem(SerialAT);
 #endif
   SerialAT.begin(115200); // Or your desired baud rate
 
   Serial.println("Initializing modem...");
-  if (modem->begin()) {
+  if (modem.begin()) {
     Serial.println("Modem initialized.");
   } else {
     Serial.println("Failed to initialize modem.");
@@ -42,7 +40,7 @@ void setup() {
   }
 
   Serial.println("Waiting for network...");
-  if (modem->waitForNetwork()) {
+  if (modem.waitForNetwork()) {
     Serial.println("Network connected.");
   } else {
     Serial.println("Failed to connect to network.");
@@ -50,7 +48,7 @@ void setup() {
   }
 
   // Get the network operator
-  String operatorName = modem->getOperator();
+  String operatorName = modem.getOperator();
   Serial.print("Operator: ");
   Serial.println(operatorName);
 
@@ -73,12 +71,12 @@ void setup() {
   if (apn.length() > 0) {
     Serial.print("Setting APN to: ");
     Serial.println(apn);
-    modem->attachData(apn);
+    modem.attachData(apn);
   }
 
   String response;
   Serial.println("Performing HTTP GET...");
-  if (modem->httpGet("http://example.com", response)) {
+  if (modem.httpGet("http://example.com", response)) {
     Serial.println("Response:");
     Serial.println(response);
   } else {
