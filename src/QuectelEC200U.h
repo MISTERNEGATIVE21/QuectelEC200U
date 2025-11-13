@@ -38,7 +38,6 @@ class QuectelEC200U {
     bool begin(bool forceReinit = false);
     void enableDebug(Stream &debugStream);
     bool sendAT(const String &cmd, const String &expect = "OK", uint32_t timeout = 3000);
-    bool sendCommand(const String &cmd, const String &expect = "OK", uint32_t timeout = 1000);
     String readResponse(uint32_t timeout);
 
     // State management
