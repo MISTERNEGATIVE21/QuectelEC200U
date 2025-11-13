@@ -351,7 +351,7 @@ void QuectelEC200U::_sendHttpHeaders(String headers[], size_t header_size) {
     if (headerLine.length() > 0) {
       String cmd = "AT+QHTTPCFG=\"header\",\"" + headerLine + "\\r\\n\"";
       if (!sendAT(cmd)) {
-        logError(F("Failed to send header: ") + headerLine);
+        logError(String(F("Failed to send header: ")) + headerLine);
       }
     }
   }
