@@ -8,8 +8,8 @@ Repository: [https://github.com/MISTERNEGATIVE21/QuectelEC200U](https://github.c
 
 More information on Custom ESP32-S3 with EC200U: [Sharvi Electronics ESP32-S3 with EC200U](https://github.com/SharviElectronics/ESP32-S3-with-EC200U/tree/main)
 
-![Capcuf EC200U-CN Module](./capcuf.png)
-More information on Capcuf EC200U-CN Module: [Capcuf EC200U-CN Module](https://capuf.in/ec200u-4g-cellular-gsm-modem)
+![Capuf EC200U-CN Module](./capuf.png)
+More information on Capuf EC200U-CN Module: [Capuf EC200U-CN Module](https://capuf.in/ec200u-4g-cellular-gsm-modem)
 
 ## Features
 - **Core & State Management:** Initialization, AT command interface, state tracking.
