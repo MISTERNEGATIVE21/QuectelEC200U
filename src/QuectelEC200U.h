@@ -76,12 +76,14 @@ class QuectelEC200U {
     bool enableCallerId(bool enable);
     
     // HTTP
-    bool httpGet(const String &url, String &response, const String &headers = "");
-    bool httpPost(const String &url, const String &data, String &response, const String &headers = "");
+    bool httpGet(const String &url, String &response, String headers[] = nullptr, size_t header_size = 0);
+    bool httpPost(const String &url, const String &data, String &response, String headers[] = nullptr, size_t header_size = 0);
+    bool httpPost(const String &url, const JsonDocument &json, String &response, String headers[] = nullptr, size_t header_size = 0);
     
     // HTTPS
-    bool httpsGet(const String &url, String &response, const String &headers = "");
-    bool httpsPost(const String &url, const String &data, String &response, const String &headers = "");
+    bool httpsGet(const String &url, String &response, String headers[] = nullptr, size_t header_size = 0);
+    bool httpsPost(const String &url, const String &data, String &response, String headers[] = nullptr, size_t header_size = 0);
+    bool httpsPost(const String &url, const JsonDocument &json, String &response, String headers[] = nullptr, size_t header_size = 0);
     
     // MQTT
     bool mqttConnect(const String &server, int port);
