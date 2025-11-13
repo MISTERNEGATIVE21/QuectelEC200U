@@ -9,7 +9,7 @@ Repository: [https://github.com/MISTERNEGATIVE21/QuectelEC200U](https://github.c
 More information on Custom ESP32-S3 with EC200U: [Sharvi Electronics ESP32-S3 with EC200U](https://github.com/SharviElectronics/ESP32-S3-with-EC200U/tree/main)
 
 ![Capuf EC200U-CN Module](./capuf.png)
-More information on Capuf EC200U-CN Module: [Capuf EC200U-CN Module](https://capuf.in/ec200u-4g-cellular-gsm-modem)
+More information on Capcuf EC200U-CN Module: [Capcuf EC200U-CN Module](https://capuf.in/products/ec200u-cn-4g-lte-modem)
 
 ## Features
 - **Core & State Management:** Initialization, AT command interface, state tracking.
@@ -89,6 +89,17 @@ void loop() {
 }
 ```
 
+## Indian APN Settings
+
+For users in India, you may need to set the APN (Access Point Name) for your mobile carrier. Here is a list of common APNs:
+
+- **Jio:** `jionet`
+- **Airtel:** `airtelgprs.com`
+- **Vodafone Idea (Vi):** `www`
+- **BSNL:** `bsnlnet`
+
+You can use the `getOperator()` function to identify the network and then set the APN accordingly. For a detailed example, see `examples/Indian_APN_Demo/Indian_APN_Demo.ino`.
+
 ## API Reference
 
 ### Core
@@ -125,8 +136,8 @@ void loop() {
 ### HTTP/HTTPS
 - `httpGet(const String &url, String &response)`: Performs an HTTP GET request.
 - `httpPost(const String &url, const String &data, String &response)`: Performs an HTTP POST request.
-- `httpsGet(const String &url, String &response)`: Performs an HTTPS GET request.
-- `httpsPost(const String &url, const String &data, String &response)`: Performs an HTTPS POST request.
+- `httpsGet(const String &url, String &response)`: Performs an HTTPS GET request. **Note:** You must call `sslConfigure()` before using this function.
+- `httpsPost(const String &url, const String &data, String &response)`: Performs an HTTPS POST request. **Note:** You must call `sslConfigure()` before using this function.
 
 ### MQTT
 - `mqttConnect(const String &server, int port)`: Connects to an MQTT broker.

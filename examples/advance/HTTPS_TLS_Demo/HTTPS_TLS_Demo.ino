@@ -20,8 +20,19 @@ void setup() {
 #endif
   modem.begin();
 
+  // Set your APN here
   modem.attachData("your.apn");
   modem.activatePDP(1);
+
+  // Before making an HTTPS request, you must configure the SSL context.
+  // This includes setting the path to your CA certificate on the module's filesystem.
+  // Upload your CA certificate to the module's filesystem first.
+  // In this example, we assume the certificate is named "cacert.pem".
+  if (modem.sslConfigure(1, "cacert.pem")) {
+    Serial.println("SSL context configured.");
+  } else {
+    Serial.println("Failed to configure SSL context.");
+  }
 
   String resp;
   Serial.println("HTTPS GET...");
