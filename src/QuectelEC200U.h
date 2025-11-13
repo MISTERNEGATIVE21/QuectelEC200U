@@ -190,7 +190,7 @@ class QuectelEC200U {
     void logDebug(const String &msg);
     void logError(const String &msg);
     void updateNetworkStatus();
-    void _sendHttpHeaders(const String &headers);
+    void _sendHttpHeaders(String headers[], size_t header_size);
 };
 
 #endif

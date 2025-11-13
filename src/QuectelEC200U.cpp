@@ -1222,17 +1222,3 @@ bool QuectelEC200U::setAudioChannel(int channel) {
 bool QuectelEC200U::setAudioInterface(const String &params) {
   return sendAT(String("AT+QDAI=") + params);
 }
-
-bool QuectelEC200U::audioLoopback(bool enable) {
-  return sendAT(String("AT+QAUDLOOP=") + (enable ? 1 : 0));
-}
-
-bool QuectelEC200U::parseJson(const String &jsonString, JsonDocument &doc) {
-  DeserializationError error = deserializeJson(doc, jsonString);
-  if (error) {
-    logError(F("JSON deserialization failed: "));
-    logError(error.c_str());
-    return false;
-  }
-  return true;
-}
