@@ -1,5 +1,7 @@
 # Changelog
 
+## 1.6.0 - 2025-11-12
+- ESP32 standardization: Fixes for terminal aand sending messages
 ## 1.5.0 - 2025-09-30
 - ESP32 standardization: all examples now use Serial2 with default pins EC200U_RX=18, EC200U_TX=17 and PW_KEY=10 via a new shared header `src/EC200U_ESP32_Config.h` (includes EC200U_powerOn helper).
 - Examples updated: HTTP, HTTPS, MQTT, NTP Sync, GNSS, FTP, Audio Setup, SMS, TCP, TTS, Voice Call, Bluetooth_and_WiFi switched to Serial2 config and cleaned legacy includes.
