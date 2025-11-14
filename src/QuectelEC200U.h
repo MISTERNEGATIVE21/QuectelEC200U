@@ -50,14 +50,14 @@ class QuectelEC200U {
     // Core utilities
     String getIMEI();
     int getSignalStrength();
-    bool setAPN(const String &apn);
+    bool setAPN(const char* apn);
     String getModemInfo();
     bool factoryReset();
     bool modem_init();
     
     // Network + PDP
     bool waitForNetwork(uint32_t timeoutMs = 60000);
-    bool attachData(const String &apn, const String &user = "", const String &pass = "", int auth = 0);
+    bool attachData(const char* apn, const char* user = "", const char* pass = "", int auth = 0);
     bool activatePDP(int ctxId = 1);
     bool deactivatePDP(int ctxId = 1);
     int getRegistrationStatus(bool eps = true);
@@ -65,13 +65,13 @@ class QuectelEC200U {
     String getOperator();
     
     // SMS
-    bool sendSMS(const String &number, const String &text);
+    bool sendSMS(const char* number, const char* text);
     String readSMS(int index);
     bool deleteSMS(int index);
     int getSMSCount();
     
     // Voice Call
-    bool dial(const String &number);
+    bool dial(const char* number);
     bool hangup();
     bool answer();
     String getCallList();
@@ -86,6 +86,9 @@ class QuectelEC200U {
     bool httpsGet(const String &url, String &response, String headers[] = nullptr, size_t header_size = 0);
     bool httpsPost(const String &url, const String &data, String &response, String headers[] = nullptr, size_t header_size = 0);
     bool httpsPost(const String &url, const JsonDocument &json, String &response, String headers[] = nullptr, size_t header_size = 0);
+
+    // Error handling
+    int getLastError();
     
     // MQTT
     bool mqttConnect(const String &server, int port);
@@ -117,7 +120,7 @@ class QuectelEC200U {
     String getGNSSLocation(uint32_t fixWaitMs);
     
     // TTS
-    bool playTTS(const String &text);
+    bool playTTS(const char* text);
     
     // FTP
     bool ftpLogin(const String &server, const String &user, const String &pass);
@@ -133,6 +136,7 @@ class QuectelEC200U {
     
     // SSL/TLS
     bool sslConfigure(int ctxId, const String &caPath, bool verify = true);
+    bool sslUploadCert(const String &cert, const String &path);
     
     // PSM
     bool enablePSM(bool enable);
@@ -173,6 +177,7 @@ class QuectelEC200U {
     int8_t _rxPin;
     int8_t _txPin;
     ModemState _state;
+    int _lastError;
     
     // Command history
     String _cmdHistory[MAX_HISTORY];
@@ -192,6 +197,7 @@ class QuectelEC200U {
     void logError(const String &msg);
     void updateNetworkStatus();
     void _sendHttpHeaders(String headers[], size_t header_size);
+    bool _sendHttpRequest(const String &url, const String &data, String &response, String headers[], size_t header_size, bool ssl, bool isPost);
 };
 
 #endif

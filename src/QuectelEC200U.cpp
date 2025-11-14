@@ -198,7 +198,32 @@ bool QuectelEC200U::sendAT(const String &cmd, const String &expect, uint32_t tim
         _debugSerial->print(F("RESP: "));
         _debugSerial->println(response);
       }
+      _lastError = 0;
       return true;
+    }
+    if (response.indexOf(F("+CME ERROR:")) != -1) {
+      _lastError = extractInteger(response, F("+CME ERROR:"));
+      if (_debugSerial) {
+        _debugSerial->print(F("RESP: "));
+        _debugSerial->println(response);
+      }
+      return false;
+    }
+    if (response.indexOf(F("+CMS ERROR:")) != -1) {
+      _lastError = extractInteger(response, F("+CMS ERROR:"));
+      if (_debugSerial) {
+        _debugSerial->print(F("RESP: "));
+        _debugSerial->println(response);
+      }
+      return false;
+    }
+    if (response.indexOf(F("ERROR")) != -1) {
+      _lastError = -1;
+      if (_debugSerial) {
+        _debugSerial->print(F("RESP: "));
+        _debugSerial->println(response);
+      }
+      return false;
     }
   }
   
@@ -206,6 +231,7 @@ bool QuectelEC200U::sendAT(const String &cmd, const String &expect, uint32_t tim
     _debugSerial->print(F("RESP: "));
     _debugSerial->println(response);
   }
+  _lastError = -1;
   return false;
 }
 
@@ -547,7 +573,7 @@ int QuectelEC200U::getSignalStrength() {
   return rssiStr.toInt();
 }
 
-bool QuectelEC200U::setAPN(const String &apn) {
+bool QuectelEC200U::setAPN(const char* apn) {
   // First check if PDP contexts are active and deactivate them
   flushInput();
   _serial->println(F("AT+QIACT?"));
@@ -612,7 +638,7 @@ bool QuectelEC200U::waitForNetwork(uint32_t timeoutMs) {
   return false;
 }
 
-bool QuectelEC200U::attachData(const String &apn, const String &user, const String &pass, int auth) {
+bool QuectelEC200U::attachData(const char* apn, const char* user, const char* pass, int auth) {
   logDebug(F("Attaching to data network..."));
   
   // Check current GPRS attach status
@@ -686,7 +712,7 @@ bool QuectelEC200U::isSimReady() {
 }
 
 // ===== SMS =====
-bool QuectelEC200U::sendSMS(const String &number, const String &text) {
+bool QuectelEC200U::sendSMS(const char* number, const char* text) {
   if (!sendAT("AT+CMGF=1")) return false;
   if (!sendAT("AT+CMGS=\"" + number + "\"", ">", 2000)) return false;
   _serial->print(text);
@@ -717,69 +743,11 @@ String QuectelEC200U::readSMS(int index) {
 
 // ===== HTTP =====
 bool QuectelEC200U::httpGet(const String &url, String &response, String headers[], size_t header_size) {
-  if (!sendAT(F("AT+QHTTPCFG=\"contextid\",1"))) return false;
-  
-  _sendHttpHeaders(headers, header_size);
-
-  if (!sendAT("AT+QHTTPURL=" + String(url.length()), F("CONNECT"))) {
-    sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-    return false;
-  }
-  _serial->print(url);
-  if (!expectURC(F("OK"), 5000)) {
-    sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-    return false;
-  }
-
-  if (!sendAT(F("AT+QHTTPGET=60"), F("OK"), 15000)) {
-    sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-    return false;
-  }
-  if (!expectURC(F("+QHTTPGET:"), 20000)) {
-    sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-    return false;
-  }
-  sendAT(F("AT+QHTTPREAD"));
-  response = readResponse(15000);
-  
-  sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-  return response.length() > 0 && response.indexOf(F("ERROR")) == -1;
+  return _sendHttpRequest(url, "", response, headers, header_size, false, false);
 }
 
 bool QuectelEC200U::httpPost(const String &url, const String &data, String &response, String headers[], size_t header_size) {
-  if (!sendAT(F("AT+QHTTPCFG=\"contextid\",1"))) return false;
-
-  _sendHttpHeaders(headers, header_size);
-
-  if (!sendAT("AT+QHTTPURL=" + String(url.length()), F("CONNECT"))) {
-    sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-    return false;
-  }
-  _serial->print(url);
-  if (!expectURC(F("OK"), 5000)) {
-    sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-    return false;
-  }
-
-  String cmd = "AT+QHTTPPOST=" + String(data.length()) + ",60,60";
-  if (!sendAT(cmd, F("CONNECT"))) {
-    sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-    return false;
-  }
-  _serial->print(data);
-  if (!expectURC(F("OK"), 10000)) {
-    sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-    return false;
-  }
-  if (!expectURC(F("+QHTTPPOST:"), 20000)) {
-    sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-    return false;
-  }
-  sendAT(F("AT+QHTTPREAD"));
-  response = readResponse(10000);
-
-  sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-  return response.indexOf(F("ERROR")) == -1;
+  return _sendHttpRequest(url, data, response, headers, header_size, false, true);
 }
 
 bool QuectelEC200U::httpPost(const String &url, const JsonDocument &json, String &response, String headers[], size_t header_size) {
@@ -790,77 +758,89 @@ bool QuectelEC200U::httpPost(const String &url, const JsonDocument &json, String
 
 // ===== HTTPS =====
 bool QuectelEC200U::httpsGet(const String &url, String &response, String headers[], size_t header_size) {
-  if (!sendAT(F("AT+QHTTPCFG=\"contextid\",1"))) return false;
-  if (!sendAT(F("AT+QHTTPCFG=\"sslctxid\",1"))) return false;
-  
-  _sendHttpHeaders(headers, header_size);
-
-  if (!sendAT("AT+QHTTPURL=" + String(url.length()), F("CONNECT"))) {
-    sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-    return false;
-  }
-  _serial->print(url);
-  if (!expectURC(F("OK"), 5000)) {
-    sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-    return false;
-  }
-
-  if (!sendAT(F("AT+QHTTPGET=60"), F("OK"), 20000)) {
-    sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-    return false;
-  }
-  if (!expectURC(F("+QHTTPGET:"), 20000)) {
-    sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-    return false;
-  }
-  sendAT(F("AT+QHTTPREAD"));
-  response = readResponse(20000);
-  
-  sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-  return response.length() > 0 && response.indexOf(F("ERROR")) == -1;
+  return _sendHttpRequest(url, "", response, headers, header_size, true, false);
 }
 
 bool QuectelEC200U::httpsPost(const String &url, const String &data, String &response, String headers[], size_t header_size) {
-  if (!sendAT(F("AT+QHTTPCFG=\"contextid\",1"))) return false;
-  if (!sendAT(F("AT+QHTTPCFG=\"sslctxid\",1"))) return false;
-
-  _sendHttpHeaders(headers, header_size);
-
-  if (!sendAT("AT+QHTTPURL=" + String(url.length()), F("CONNECT"))) {
-    sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-    return false;
-  }
-  _serial->print(url);
-  if (!expectURC(F("OK"), 5000)) {
-    sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-    return false;
-  }
-
-  String cmd = "AT+QHTTPPOST=" + String(data.length()) + ",60,60";
-  if (!sendAT(cmd, F("CONNECT"))) {
-    sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-    return false;
-  }
-  _serial->print(data);
-  if (!expectURC(F("OK"), 10000)) {
-    sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-    return false;
-  }
-  if (!expectURC(F("+QHTTPPOST:"), 20000)) {
-    sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-    return false;
-  }
-  sendAT(F("AT+QHTTPREAD"));
-  response = readResponse(10000);
-
-  sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-  return response.indexOf(F("ERROR")) == -1;
+  return _sendHttpRequest(url, data, response, headers, header_size, true, true);
 }
 
 bool QuectelEC200U::httpsPost(const String &url, const JsonDocument &json, String &response, String headers[], size_t header_size) {
   String data;
   serializeJson(json, data);
   return httpsPost(url, data, response, headers, header_size);
+}
+
+int QuectelEC200U::getLastError() {
+  return _lastError;
+}
+
+bool QuectelEC200U::_sendHttpRequest(const String &url, const String &data, String &response, String headers[], size_t header_size, bool ssl, bool isPost) {
+  if (!sendAT(F("AT+QHTTPCFG=\"contextid\",1"))) {
+    _lastError = 1;
+    return false;
+  }
+  if (ssl) {
+    if (!sendAT(F("AT+QHTTPCFG=\"sslctxid\",1"))) {
+      _lastError = 2;
+      return false;
+    }
+  }
+
+  _sendHttpHeaders(headers, header_size);
+
+  if (!sendAT("AT+QHTTPURL=" + String(url.length()), F("CONNECT"))) {
+    sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
+    _lastError = 3;
+    return false;
+  }
+  _serial->print(url);
+  if (!expectURC(F("OK"), 5000)) {
+    sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
+    _lastError = 4;
+    return false;
+  }
+
+  if (isPost) {
+    String cmd = "AT+QHTTPPOST=" + String(data.length()) + ",60,60";
+    if (!sendAT(cmd, F("CONNECT"))) {
+      sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
+      _lastError = 5;
+      return false;
+    }
+    _serial->print(data);
+    if (!expectURC(F("OK"), 10000)) {
+      sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
+      _lastError = 6;
+      return false;
+    }
+    if (!expectURC(F("+QHTTPPOST:"), 20000)) {
+      sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
+      _lastError = 7;
+      return false;
+    }
+  } else {
+    if (!sendAT(F("AT+QHTTPGET=60"), F("OK"), 15000)) {
+      sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
+      _lastError = 8;
+      return false;
+    }
+    if (!expectURC(F("+QHTTPGET:"), 20000)) {
+      sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
+      _lastError = 9;
+      return false;
+    }
+  }
+
+  sendAT(F("AT+QHTTPREAD"));
+  response = readResponse(15000);
+
+  sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
+  if (response.indexOf(F("ERROR")) != -1) {
+    _lastError = 10;
+    return false;
+  }
+  return response.length() > 0;
 }
 
 // ===== TCP sockets =====
@@ -1016,7 +996,7 @@ String QuectelEC200U::getGNSSLocation(uint32_t fixWaitMs) {
 }
 
 // ===== TTS =====
-bool QuectelEC200U::playTTS(const String &text) {
+bool QuectelEC200U::playTTS(const char* text) {
   return sendAT("AT+QTTS=1,\"" + text + "\"");
 }
 
@@ -1139,6 +1119,10 @@ bool QuectelEC200U::sslConfigure(int ctxId, const String &caPath, bool verify) {
   return sendAT("AT+QSSLCFG=\"seclevel\"," + String(ctxId) + "," + String(verify ? 2 : 0));
 }
 
+bool QuectelEC200U::sslUploadCert(const String &cert, const String &path) {
+  return fsUpload(path, cert);
+}
+
 // ===== PSM =====
 bool QuectelEC200U::enablePSM(bool enable) {
   return sendAT(String("AT+CPSMS=") + (enable ? "1" : "0"));
@@ -1166,7 +1150,7 @@ bool QuectelEC200U::mqttSubscribe(const String &topic) {
 }
 
 // ===== Voice Call =====
-bool QuectelEC200U::dial(const String &number) {
+bool QuectelEC200U::dial(const char* number) {
   return sendAT(String("ATD") + number + ";");
 }
 
