@@ -71,7 +71,7 @@ void setup() {
   if (apn.length() > 0) {
     Serial.print("Setting APN to: ");
     Serial.println(apn);
-    modem.attachData(apn);
+    modem.attachData(apn.c_str());
   }
 
   String response;

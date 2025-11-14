@@ -54,7 +54,7 @@ void setup() {
   const String pass = "";
 
   Serial.println("Attaching to data network...");
-  if (!modem.attachData(apn, user, pass)) {
+  if (!modem.attachData(apn.c_str(), user.c_str(), pass.c_str())) {
     Serial.println("Failed to attach to data network!");
     while (true);
   }
