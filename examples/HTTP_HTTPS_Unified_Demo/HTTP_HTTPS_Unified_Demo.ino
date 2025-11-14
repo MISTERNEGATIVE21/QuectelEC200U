@@ -77,7 +77,7 @@ void setup() {
   // Note: You should use the correct CA certificate for your host
   Serial.println("Uploading CA certificate...");
   // The ca_cert.h file contains 'cloudflare_ca_cert'
-  if (modem.fsUpload(cert_path, cloudflare_ca_cert)) {
+  if (modem.sslUploadCert(cloudflare_ca_cert, cert_path)) {
     Serial.println("Certificate uploaded.");
   } else {
     Serial.println("Failed to upload certificate. Make sure ca_cert.h is correct and modem filesystem is writable.");
