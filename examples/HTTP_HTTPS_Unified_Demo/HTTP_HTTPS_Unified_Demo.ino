@@ -47,7 +47,7 @@ void setup() {
 #endif
 
   Serial.println("Initializing modem...");
-  if (!modem.modem_init()) {
+  if (!modem.begin()) {
     Serial.println("Failed to initialize modem!");
     while (true);
   }
@@ -59,7 +59,7 @@ void setup() {
   const String pass = "";
 
   Serial.println("Attaching to data network...");
-  if (!modem.attachData(apn, user, pass)) {
+  if (!modem.attachData(apn.c_str(), user.c_str(), pass.c_str())) {
     Serial.println("Failed to attach to data network!");
     while (true);
   }

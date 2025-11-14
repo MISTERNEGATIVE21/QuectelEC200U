@@ -59,7 +59,8 @@ void setup() {
   if (modem.begin()) {
     Serial.println("Modem initialized.");
   } else {
-    Serial.println("Failed to initialize modem.");
+    Serial.print("Failed to initialize modem. Error: ");
+    Serial.println(modem.getLastErrorString());
     while (1);
   }
 
@@ -67,7 +68,8 @@ void setup() {
   if (modem.waitForNetwork()) {
     Serial.println("Network connected.");
   } else {
-    Serial.println("Failed to connect to network.");
+    Serial.print("Failed to connect to network. Error: ");
+    Serial.println(modem.getLastErrorString());
     while (1);
   }
 
@@ -80,7 +82,8 @@ void setup() {
     Serial.println("Response:");
     Serial.println(response);
   } else {
-    Serial.println("HTTP GET failed.");
+    Serial.print("HTTP GET failed. Error: ");
+    Serial.println(modem.getLastErrorString());
   }
 }
 
@@ -111,13 +114,16 @@ For a detailed example, see `examples/PPPOS_Demo/PPPOS_Demo.ino`.
 ### Core
 - `begin(bool forceReinit = false)`: Initializes the modem.
 - `sendAT(const String &cmd, const String &expect = "OK", uint32_t timeout = 3000)`: Sends an AT command.
-- `sendCommand(const String &cmd, const String &expect = "OK", uint32_t timeout = 1000)`: Sends a command and waits for a response.
-- `readResponse(uint32_t timeout)`: Reads the response from the modem.
+- `readResponse(char* buffer, size_t length, uint32_t timeout)`: Reads the response from the modem into the provided buffer.
 - `getIMEI()`: Gets the modem's IMEI.
 - `getModemInfo()`: Gets information about the modem.
 - `factoryReset()`: Resets the modem to factory defaults.
 - `powerOff()`: Powers off the modem.
 - `reboot()`: Reboots the modem.
+
+### Error Handling
+- `getLastError()`: Returns the last error code as an `ErrorCode` enum.
+- `getLastErrorString()`: Returns a string description of the last error.
 
 ### State Management
 - `getState()`: Returns the current modem state (`ModemState` enum).
@@ -237,7 +243,7 @@ The library uses a state machine to track the modem's status. You can get the cu
 - `MODEM_UNINITIALIZED`: The modem has not been initialized.
 - `MODEM_INITIALIZING`: The modem is currently initializing.
 - `MODEM_READY`: The modem is initialized and ready to receive commands.
-- `MODEM_ERROR`: An error occurred during initialization.
+- `MODEM_ERROR`: An error occurred during initialization. Use `getLastError()` or `getLastErrorString()` to get more information.
 - `MODEM_NETWORK_CONNECTED`: The modem is registered on the network.
 - `MODEM_DATA_READY`: The modem has an active data connection.
 

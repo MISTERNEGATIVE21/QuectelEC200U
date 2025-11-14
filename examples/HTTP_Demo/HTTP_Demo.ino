@@ -42,7 +42,7 @@ void setup() {
 #endif
   
   Serial.println("Initializing modem...");
-  if (!modem.modem_init()) {
+  if (!modem.begin()) {
     Serial.println("Failed to initialize modem!");
     while (true);
   }

@@ -29,6 +29,34 @@ enum ModemState {
   MODEM_DATA_READY
 };
 
+enum class ErrorCode {
+  NONE = 0,
+  UNKNOWN = -1,
+  MODEM_NOT_RESPONDING = -2,
+  SIM_NOT_READY = -3,
+  SIGNAL_QUALITY_LOW = -4,
+  GPRS_NOT_ATTACHED = -5,
+  APN_CONFIG_FAILED = -6,
+  AUTH_CONFIG_FAILED = -7,
+  PDP_ACTIVATION_FAILED = -8,
+  HTTP_ERROR = -10,
+  HTTP_CONTEXT_ID_FAILED = -11,
+  HTTP_SSL_CONTEXT_ID_FAILED = -12,
+  HTTP_URL_FAILED = -13,
+  HTTP_URL_WRITE_FAILED = -14,
+  HTTP_POST_FAILED = -15,
+  HTTP_POST_DATA_WRITE_FAILED = -16,
+  HTTP_POST_URC_FAILED = -17,
+  HTTP_GET_FAILED = -18,
+  HTTP_GET_URC_FAILED = -19,
+  HTTP_READ_FAILED = -20,
+  FTP_ERROR = -30,
+  MQTT_ERROR = -40,
+  TCP_ERROR = -50,
+  SSL_ERROR = -60,
+  FS_ERROR = -70,
+};
+
 class QuectelEC200U {
   public:
     // HardwareSerial constructor (auto-configure on begin). On ESP32, optional RX/TX pins are supported.
@@ -39,7 +67,8 @@ class QuectelEC200U {
     bool begin(bool forceReinit = false);
     void enableDebug(Stream &debugStream);
     bool sendAT(const String &cmd, const String &expect = "OK", uint32_t timeout = 3000);
-    String readResponse(uint32_t timeout);
+    [[deprecated("Use readResponse(char*, size_t, uint32_t) instead")]] String readResponse(uint32_t timeout);
+    int readResponse(char* buffer, size_t length, uint32_t timeout);
 
     // State management
     ModemState getState() const { return _state; }
@@ -53,7 +82,7 @@ class QuectelEC200U {
     bool setAPN(const char* apn);
     String getModemInfo();
     bool factoryReset();
-    bool modem_init();
+    [[deprecated("Use begin() instead")]] bool modem_init();
     
     // Network + PDP
     bool waitForNetwork(uint32_t timeoutMs = 60000);
@@ -88,7 +117,8 @@ class QuectelEC200U {
     bool httpsPost(const String &url, const JsonDocument &json, String &response, String headers[] = nullptr, size_t header_size = 0);
 
     // Error handling
-    int getLastError();
+    ErrorCode getLastError();
+    String getLastErrorString();
     
     // MQTT
     bool mqttConnect(const String &server, int port);
@@ -164,8 +194,8 @@ class QuectelEC200U {
     bool reboot();
     
     // Utility functions
-    String extractQuotedString(const String &response, const String &tag);
-    int extractInteger(const String &response, const String &tag);
+    String extractQuotedString(const char* response, const String &tag);
+    int extractInteger(const char* response, const String &tag);
     bool waitForResponse(const String &expect, uint32_t timeout);
     bool parseJson(const String &jsonString, JsonDocument &doc);
     
@@ -177,7 +207,7 @@ class QuectelEC200U {
     int8_t _rxPin;
     int8_t _txPin;
     ModemState _state;
-    int _lastError;
+    ErrorCode _lastError;
     
     // Command history
     String _cmdHistory[MAX_HISTORY];
@@ -198,6 +228,9 @@ class QuectelEC200U {
     void updateNetworkStatus();
     void _sendHttpHeaders(String headers[], size_t header_size);
     bool _sendHttpRequest(const String &url, const String &data, String &response, String headers[], size_t header_size, bool ssl, bool isPost);
+    String _getSignalStrengthString(int signal);
+    String _getRegistrationStatusString(int regStatus);
+    int _parseCsvInt(const String& response, const String& tag, int index);
 };
 
 #endif

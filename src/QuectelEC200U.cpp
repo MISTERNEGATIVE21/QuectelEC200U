@@ -123,6 +123,7 @@ bool QuectelEC200U::initializeModem() {
     }
     if (i == 4) {
       logError(F("Modem not responding"));
+      _lastError = ErrorCode::MODEM_NOT_RESPONDING;
       return false;
     }
     delay(500);
@@ -149,6 +150,7 @@ bool QuectelEC200U::initializeModem() {
       }
       if (i == 2) {
         logError(F("SIM card not ready"));
+        _lastError = ErrorCode::SIM_NOT_READY;
         return false;
       }
       delay(1000);
@@ -158,11 +160,13 @@ bool QuectelEC200U::initializeModem() {
   // Check signal quality
   if (getSignalStrength() < 10) {
     logError(F("Signal quality is too low"));
+    _lastError = ErrorCode::SIGNAL_QUALITY_LOW;
   }
 
   // Check GPRS attachment
   if (!sendAT(F("AT+CGATT?"), F("+CGATT: 1"))) {
     logError(F("GPRS not attached"));
+    _lastError = ErrorCode::GPRS_NOT_ATTACHED;
   }
 
   updateNetworkStatus();
@@ -183,89 +187,78 @@ bool QuectelEC200U::sendAT(const String &cmd, const String &expect, uint32_t tim
     _debugSerial->print(F("CMD: "));
     _debugSerial->println(cmd);
   }
-  
+
   _serial->println(cmd);
-  uint32_t start = millis();
-  String response = "";
-  
-  while (millis() - start < timeout) {
-    while (_serial->available()) {
-      char c = (char)_serial->read();
-      response += c;
-    }
-    if (response.indexOf(expect) != -1) {
-      if (_debugSerial) {
-        _debugSerial->print(F("RESP: "));
-        _debugSerial->println(response);
-      }
-      _lastError = 0;
-      return true;
-    }
-    if (response.indexOf(F("+CME ERROR:")) != -1) {
-      _lastError = extractInteger(response, F("+CME ERROR:"));
-      if (_debugSerial) {
-        _debugSerial->print(F("RESP: "));
-        _debugSerial->println(response);
-      }
-      return false;
-    }
-    if (response.indexOf(F("+CMS ERROR:")) != -1) {
-      _lastError = extractInteger(response, F("+CMS ERROR:"));
-      if (_debugSerial) {
-        _debugSerial->print(F("RESP: "));
-        _debugSerial->println(response);
-      }
-      return false;
-    }
-    if (response.indexOf(F("ERROR")) != -1) {
-      _lastError = -1;
-      if (_debugSerial) {
-        _debugSerial->print(F("RESP: "));
-        _debugSerial->println(response);
-      }
-      return false;
-    }
-  }
-  
+
+  char buffer[256];
+  readResponse(buffer, sizeof(buffer), timeout);
+
   if (_debugSerial) {
     _debugSerial->print(F("RESP: "));
-    _debugSerial->println(response);
+    _debugSerial->println(buffer);
   }
-  _lastError = -1;
+
+  if (strstr(buffer, expect.c_str()) != NULL) {
+    _lastError = ErrorCode::NONE;
+    return true;
+  }
+
+  if (strstr(buffer, "+CME ERROR:") != NULL) {
+    _lastError = (ErrorCode)extractInteger(buffer, F("+CME ERROR:"));
+    return false;
+  }
+
+  if (strstr(buffer, "+CMS ERROR:") != NULL) {
+    _lastError = (ErrorCode)extractInteger(buffer, F("+CMS ERROR:"));
+    return false;
+  }
+
+  if (strstr(buffer, "ERROR") != NULL) {
+    _lastError = ErrorCode::UNKNOWN;
+    return false;
+  }
+
+  _lastError = ErrorCode::UNKNOWN;
   return false;
 }
 
 
 
-String QuectelEC200U::readResponse(uint32_t timeout) {
-  String resp = "";
+[[deprecated("Use readResponse(char*, size_t, uint32_t) instead")]] String QuectelEC200U::readResponse(uint32_t timeout) {
+  char buffer[256];
+  readResponse(buffer, sizeof(buffer), timeout);
+  return String(buffer);
+}
+
+int QuectelEC200U::readResponse(char* buffer, size_t length, uint32_t timeout) {
+  size_t bytesRead = 0;
   uint32_t start = millis();
-  
-  while (millis() - start < timeout) {
-    while (_serial->available()) {
+
+  while (millis() - start < timeout && bytesRead < length - 1) {
+    while (_serial->available() && bytesRead < length - 1) {
       char c = (char)_serial->read();
-      resp += c;
-      
+      buffer[bytesRead++] = c;
       if (_debugSerial) {
         _debugSerial->print(c);
       }
     }
-    
+    buffer[bytesRead] = '\0';
+
     // Exit early if we have a complete response
-    if (resp.endsWith(F("\r\nOK\r\n")) || 
-        resp.endsWith(F("\r\nERROR\r\n")) || 
-        resp.endsWith(F("\r\n> ")) || 
-        resp.indexOf(F("+CME ERROR:")) != -1) {
+    if (strstr(buffer, "\r\nOK\r\n") != NULL ||
+        strstr(buffer, "\r\nERROR\r\n") != NULL ||
+        strstr(buffer, "\r\n> ") != NULL ||
+        strstr(buffer, "+CME ERROR:") != NULL) {
       break;
     }
-    
+
     // Small delay to allow buffer to fill
     if (!_serial->available()) {
       delay(10);
     }
   }
-  
-  return resp;
+
+  return bytesRead;
 }
 
 bool QuectelEC200U::waitForResponse(const String &expect, uint32_t timeout) {
@@ -338,36 +331,38 @@ void QuectelEC200U::clearHistory() {
 }
 
 // Utility functions
-String QuectelEC200U::extractQuotedString(const String &response, const String &tag) {
-  int tagIdx = response.indexOf(tag);
-  if (tagIdx == -1) return "";
-  
-  int start = response.indexOf('"', tagIdx);
-  if (start == -1) return "";
-  
-  int end = response.indexOf('"', start + 1);
-  if (end == -1) return "";
-  
-  return response.substring(start + 1, end);
+String QuectelEC200U::extractQuotedString(const char* response, const String &tag) {
+  const char* tag_c = tag.c_str();
+  const char* tagIdx = strstr(response, tag_c);
+  if (tagIdx == NULL) return "";
+
+  const char* start = strchr(tagIdx, '"');
+  if (start == NULL) return "";
+
+  const char* end = strchr(start + 1, '"');
+  if (end == NULL) return "";
+
+  int length = end - (start + 1);
+  char buffer[length + 1];
+  strncpy(buffer, start + 1, length);
+  buffer[length] = '\0';
+
+  return String(buffer);
 }
 
-int QuectelEC200U::extractInteger(const String &response, const String &tag) {
-  int tagIdx = response.indexOf(tag);
-  if (tagIdx == -1) return -1;
-  
-  int start = tagIdx + tag.length();
-  while (start < response.length() && !isDigit(response.charAt(start)) && response.charAt(start) != '-') {
+int QuectelEC200U::extractInteger(const char* response, const String &tag) {
+  const char* tag_c = tag.c_str();
+  const char* tagIdx = strstr(response, tag_c);
+  if (tagIdx == NULL) return -1;
+
+  const char* start = tagIdx + strlen(tag_c);
+  while (*start != '\0' && !isDigit(*start) && *start != '-') {
     start++;
   }
-  
-  if (start >= response.length()) return -1;
-  
-  String numStr = "";
-  while (start < response.length() && (isDigit(response.charAt(start)) || response.charAt(start) == '-')) {
-    numStr += response.charAt(start++);
-  }
-  
-  return numStr.toInt();
+
+  if (*start == '\0') return -1;
+
+  return atoi(start);
 }
 
 void QuectelEC200U::_sendHttpHeaders(String headers[], size_t header_size) {
@@ -395,9 +390,11 @@ void QuectelEC200U::_sendHttpHeaders(String headers[], size_t header_size) {
 
 // Modem info functions with better formatting
 String QuectelEC200U::getModemInfo() {
-  String info = "";
+  String info;
+  info.reserve(256); // Pre-allocate memory
+
   info += F("=== Modem Information ===\n");
-  
+
   _serial->println(F("ATI"));
   String model = readResponse(1000);
   int crIdx = model.indexOf('\r');
@@ -407,48 +404,33 @@ String QuectelEC200U::getModemInfo() {
     info += model;
     info += F("\n");
   }
-  
+
   String imei = getIMEI();
   if (imei.length() > 0) {
     info += F("IMEI: ");
     info += imei;
     info += F("\n");
   }
-  
+
   int signal = getSignalStrength();
-  if (signal >= 0) {
-    info += F("Signal: ");
-    info += String(signal);
-    info += F(" (");
-    if (signal == 0) info += F("< -113 dBm");
-    else if (signal == 1) info += F("-111 dBm");
-    else if (signal >= 2 && signal <= 30) {
-      info += String(-109 + (signal - 2) * 2);
-      info += F(" dBm");
-    }
-    else if (signal == 31) info += F("> -51 dBm");
-    else info += F("Unknown");
-    info += F(")\n");
-  }
-  
+  info += F("Signal: ");
+  info += String(signal);
+  info += F(" (");
+  info += _getSignalStrengthString(signal);
+  info += F(")\n");
+
   String oper = getOperator();
   if (oper.length() > 0) {
     info += F("Operator: ");
     info += oper;
     info += F("\n");
   }
-  
+
   int regStatus = getRegistrationStatus();
   info += F("Registration: ");
-  switch (regStatus) {
-    case 0: info += F("Not registered\n"); break;
-    case 1: info += F("Registered (home)\n"); break;
-    case 2: info += F("Searching...\n"); break;
-    case 3: info += F("Registration denied\n"); break;
-    case 5: info += F("Registered (roaming)\n"); break;
-    default: info += F("Unknown\n"); break;
-  }
-  
+  info += _getRegistrationStatusString(regStatus);
+  info += F("\n");
+
   info += F("========================");
   return info;
 }
@@ -456,7 +438,7 @@ String QuectelEC200U::getModemInfo() {
 String QuectelEC200U::getOperator() {
   _serial->println(F("AT+COPS?"));
   String resp = readResponse(1000);
-  return extractQuotedString(resp, F("+COPS:"));
+  return extractQuotedString(resp.c_str(), F("+COPS:"));
 }
 
 bool QuectelEC200U::factoryReset() {
@@ -472,8 +454,8 @@ bool QuectelEC200U::factoryReset() {
   return result;
 }
 
-bool QuectelEC200U::modem_init() {
-  return initializeModem();
+[[deprecated("Use begin() instead")]] bool QuectelEC200U::modem_init() {
+  return begin();
 }
 
 bool QuectelEC200U::powerOff() {
@@ -559,18 +541,7 @@ String QuectelEC200U::getIMEI() {
 int QuectelEC200U::getSignalStrength() {
   _serial->println(F("AT+CSQ"));
   String resp = readResponse(1000);
-  // Response is typically: +CSQ: <rssi>,<ber>
-  int csq_index = resp.indexOf(F("+CSQ:"));
-  if (csq_index == -1) return -1;
-
-  int c1 = resp.indexOf(':', csq_index);
-  if (c1 == -1) return -1;
-  int c2 = resp.indexOf(',', c1 + 1);
-  if (c2 == -1) return -1;
-  
-  String rssiStr = resp.substring(c1 + 1, c2);
-  rssiStr.trim();
-  return rssiStr.toInt();
+  return _parseCsvInt(resp, F("+CSQ: "), 0);
 }
 
 bool QuectelEC200U::setAPN(const char* apn) {
@@ -651,6 +622,7 @@ bool QuectelEC200U::attachData(const char* apn, const char* user, const char* pa
     logDebug(F("GPRS not attached, attaching..."));
     if (!sendAT(F("AT+CGATT=1"), F("OK"), 10000)) {
       logError(F("GPRS attach failed"));
+      _lastError = ErrorCode::GPRS_NOT_ATTACHED;
       return false;
     }
     delay(2000);
@@ -661,13 +633,14 @@ bool QuectelEC200U::attachData(const char* apn, const char* user, const char* pa
   // Set APN (will handle if already set)
   if (!setAPN(apn)) {
     logError(F("APN configuration failed"));
+    _lastError = ErrorCode::APN_CONFIG_FAILED;
     return false;
   }
   
   // Configure authentication if provided
-  if (user.length() > 0) {
+  if (strlen(user) > 0) {
     logDebug(F("Configuring PDP authentication..."));
-    String authCmd = "AT+QICSGP=1,1,\"" + apn + "\",\"" + user + "\",\"" + pass + "\"," + String(auth);
+    String authCmd = String("AT+QICSGP=1,1,\"") + apn + "\",\"" + user + "\",\"" + pass + "\"," + String(auth);
     
     flushInput();
     _serial->println(authCmd);
@@ -675,6 +648,7 @@ bool QuectelEC200U::attachData(const char* apn, const char* user, const char* pa
     
     if (authResp.indexOf(F("OK")) == -1 && authResp.indexOf(F("Operation not allowed")) == -1) {
       logError(F("Authentication configuration failed"));
+      _lastError = ErrorCode::AUTH_CONFIG_FAILED;
       return false;
     }
   }
@@ -692,19 +666,10 @@ bool QuectelEC200U::deactivatePDP(int ctxId) {
 }
 
 int QuectelEC200U::getRegistrationStatus(bool eps) {
-  _serial->println(eps ? "AT+CEREG?" : "AT+CREG?");
+  _serial->println(eps ? F("AT+CEREG?") : F("AT+CREG?"));
   String resp = readResponse(1000);
-  // Response is typically: +CEREG: <n>,<stat>
-  String tag = eps ? "+CEREG: " : "+CREG: ";
-  int tag_index = resp.indexOf(tag);
-  if (tag_index == -1) return -1;
-
-  int c1 = resp.indexOf(',', tag_index);
-  if (c1 == -1) return -1;
-  
-  String statStr = resp.substring(c1 + 1);
-  // The status is the first integer we can parse from the rest of the string
-  return atoi(statStr.c_str());
+  String tag = eps ? F("+CEREG: ") : F("+CREG: ");
+  return _parseCsvInt(resp, tag, 1);
 }
 
 bool QuectelEC200U::isSimReady() {
@@ -714,7 +679,7 @@ bool QuectelEC200U::isSimReady() {
 // ===== SMS =====
 bool QuectelEC200U::sendSMS(const char* number, const char* text) {
   if (!sendAT("AT+CMGF=1")) return false;
-  if (!sendAT("AT+CMGS=\"" + number + "\"", ">", 2000)) return false;
+  if (!sendAT(String("AT+CMGS=\"") + number + "\"", ">", 2000)) return false;
   _serial->print(text);
   _serial->write(26);
   
@@ -771,18 +736,49 @@ bool QuectelEC200U::httpsPost(const String &url, const JsonDocument &json, Strin
   return httpsPost(url, data, response, headers, header_size);
 }
 
-int QuectelEC200U::getLastError() {
+ErrorCode QuectelEC200U::getLastError() {
   return _lastError;
+}
+
+String QuectelEC200U::getLastErrorString() {
+  switch (_lastError) {
+    case ErrorCode::NONE: return "No error";
+    case ErrorCode::UNKNOWN: return "Unknown error";
+    case ErrorCode::MODEM_NOT_RESPONDING: return "Modem not responding";
+    case ErrorCode::SIM_NOT_READY: return "SIM not ready";
+    case ErrorCode::SIGNAL_QUALITY_LOW: return "Signal quality too low";
+    case ErrorCode::GPRS_NOT_ATTACHED: return "GPRS not attached";
+    case ErrorCode::APN_CONFIG_FAILED: return "APN configuration failed";
+    case ErrorCode::AUTH_CONFIG_FAILED: return "Authentication configuration failed";
+    case ErrorCode::PDP_ACTIVATION_FAILED: return "PDP activation failed";
+    case ErrorCode::HTTP_ERROR: return "HTTP error";
+    case ErrorCode::HTTP_CONTEXT_ID_FAILED: return "HTTP context ID failed";
+    case ErrorCode::HTTP_SSL_CONTEXT_ID_FAILED: return "HTTP SSL context ID failed";
+    case ErrorCode::HTTP_URL_FAILED: return "HTTP URL failed";
+    case ErrorCode::HTTP_URL_WRITE_FAILED: return "HTTP URL write failed";
+    case ErrorCode::HTTP_POST_FAILED: return "HTTP POST failed";
+    case ErrorCode::HTTP_POST_DATA_WRITE_FAILED: return "HTTP POST data write failed";
+    case ErrorCode::HTTP_POST_URC_FAILED: return "HTTP POST URC failed";
+    case ErrorCode::HTTP_GET_FAILED: return "HTTP GET failed";
+    case ErrorCode::HTTP_GET_URC_FAILED: return "HTTP GET URC failed";
+    case ErrorCode::HTTP_READ_FAILED: return "HTTP read failed";
+    case ErrorCode::FTP_ERROR: return "FTP error";
+    case ErrorCode::MQTT_ERROR: return "MQTT error";
+    case ErrorCode::TCP_ERROR: return "TCP error";
+    case ErrorCode::SSL_ERROR: return "SSL error";
+    case ErrorCode::FS_ERROR: return "Filesystem error";
+    default: return "Unknown error code";
+  }
 }
 
 bool QuectelEC200U::_sendHttpRequest(const String &url, const String &data, String &response, String headers[], size_t header_size, bool ssl, bool isPost) {
   if (!sendAT(F("AT+QHTTPCFG=\"contextid\",1"))) {
-    _lastError = 1;
+    _lastError = ErrorCode::HTTP_CONTEXT_ID_FAILED;
     return false;
   }
   if (ssl) {
     if (!sendAT(F("AT+QHTTPCFG=\"sslctxid\",1"))) {
-      _lastError = 2;
+      _lastError = ErrorCode::HTTP_SSL_CONTEXT_ID_FAILED;
       return false;
     }
   }
@@ -791,13 +787,13 @@ bool QuectelEC200U::_sendHttpRequest(const String &url, const String &data, Stri
 
   if (!sendAT("AT+QHTTPURL=" + String(url.length()), F("CONNECT"))) {
     sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-    _lastError = 3;
+    _lastError = ErrorCode::HTTP_URL_FAILED;
     return false;
   }
   _serial->print(url);
   if (!expectURC(F("OK"), 5000)) {
     sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-    _lastError = 4;
+    _lastError = ErrorCode::HTTP_URL_WRITE_FAILED;
     return false;
   }
 
@@ -805,29 +801,29 @@ bool QuectelEC200U::_sendHttpRequest(const String &url, const String &data, Stri
     String cmd = "AT+QHTTPPOST=" + String(data.length()) + ",60,60";
     if (!sendAT(cmd, F("CONNECT"))) {
       sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-      _lastError = 5;
+      _lastError = ErrorCode::HTTP_POST_FAILED;
       return false;
     }
     _serial->print(data);
     if (!expectURC(F("OK"), 10000)) {
       sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-      _lastError = 6;
+      _lastError = ErrorCode::HTTP_POST_DATA_WRITE_FAILED;
       return false;
     }
     if (!expectURC(F("+QHTTPPOST:"), 20000)) {
       sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-      _lastError = 7;
+      _lastError = ErrorCode::HTTP_POST_URC_FAILED;
       return false;
     }
   } else {
     if (!sendAT(F("AT+QHTTPGET=60"), F("OK"), 15000)) {
       sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-      _lastError = 8;
+      _lastError = ErrorCode::HTTP_GET_FAILED;
       return false;
     }
     if (!expectURC(F("+QHTTPGET:"), 20000)) {
       sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-      _lastError = 9;
+      _lastError = ErrorCode::HTTP_GET_URC_FAILED;
       return false;
     }
   }
@@ -837,7 +833,7 @@ bool QuectelEC200U::_sendHttpRequest(const String &url, const String &data, Stri
 
   sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
   if (response.indexOf(F("ERROR")) != -1) {
-    _lastError = 10;
+    _lastError = ErrorCode::HTTP_READ_FAILED;
     return false;
   }
   return response.length() > 0;
@@ -997,7 +993,7 @@ String QuectelEC200U::getGNSSLocation(uint32_t fixWaitMs) {
 
 // ===== TTS =====
 bool QuectelEC200U::playTTS(const char* text) {
-  return sendAT("AT+QTTS=1,\"" + text + "\"");
+  return sendAT(String("AT+QTTS=1,\"") + text + "\"");
 }
 
 // ===== FTP =====
@@ -1147,6 +1143,52 @@ bool QuectelEC200U::mqttPublish(const String &topic, const String &message) {
 
 bool QuectelEC200U::mqttSubscribe(const String &topic) {
   return sendAT("AT+QMTSUB=0,1,\"" + topic + "\",0", F("+QMTSUB: 0,1,0"), 5000);
+}
+
+String QuectelEC200U::_getSignalStrengthString(int signal) {
+  if (signal < 0) return "Unknown";
+  if (signal == 0) return "< -113 dBm";
+  if (signal == 1) return "-111 dBm";
+  if (signal >= 2 && signal <= 30) {
+    return String(-109 + (signal - 2) * 2) + " dBm";
+  }
+  if (signal == 31) return "> -51 dBm";
+  return "Unknown";
+}
+
+String QuectelEC200U::_getRegistrationStatusString(int regStatus) {
+  switch (regStatus) {
+    case 0: return "Not registered";
+    case 1: return "Registered (home)";
+    case 2: return "Searching...";
+    case 3: return "Registration denied";
+    case 5: return "Registered (roaming)";
+    default: return "Unknown";
+  }
+}
+
+int QuectelEC200U::_parseCsvInt(const String& response, const String& tag, int index) {
+  int tagIdx = response.indexOf(tag);
+  if (tagIdx == -1) return -1;
+
+  int currentIdx = tagIdx + tag.length();
+  for (int i = 0; i < index; i++) {
+    currentIdx = response.indexOf(',', currentIdx);
+    if (currentIdx == -1) return -1;
+    currentIdx++;
+  }
+
+  int endIdx = response.indexOf(',', currentIdx);
+  if (endIdx == -1) {
+    endIdx = response.indexOf('\r', currentIdx);
+    if (endIdx == -1) {
+        endIdx = response.length();
+    }
+  }
+
+  String valStr = response.substring(currentIdx, endIdx);
+  valStr.trim();
+  return valStr.toInt();
 }
 
 // ===== Voice Call =====
