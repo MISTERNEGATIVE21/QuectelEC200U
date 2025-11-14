@@ -155,6 +155,16 @@ bool QuectelEC200U::initializeModem() {
     }
   }
 
+  // Check signal quality
+  if (getSignalStrength() < 10) {
+    logError(F("Signal quality is too low"));
+  }
+
+  // Check GPRS attachment
+  if (!sendAT(F("AT+CGATT?"), F("+CGATT: 1"))) {
+    logError(F("GPRS not attached"));
+  }
+
   updateNetworkStatus();
   return true;
 }
@@ -434,6 +444,10 @@ bool QuectelEC200U::factoryReset() {
     _state = MODEM_UNINITIALIZED;
   }
   return result;
+}
+
+bool QuectelEC200U::modem_init() {
+  return initializeModem();
 }
 
 bool QuectelEC200U::powerOff() {

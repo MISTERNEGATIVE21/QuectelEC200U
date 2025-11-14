@@ -40,11 +40,36 @@ void setup() {
 #else
   SerialAT.begin(9600);
 #endif
-  modem.begin();
+  
+  Serial.println("Initializing modem...");
+  if (!modem.modem_init()) {
+    Serial.println("Failed to initialize modem!");
+    while (true);
+  }
+  Serial.println("Modem initialized.");
+
+  // Replace with your actual APN, username, and password
+  const String apn = "JioNet";
+  const String user = "";
+  const String pass = "";
+
+  Serial.println("Attaching to data network...");
+  if (!modem.attachData(apn, user, pass)) {
+    Serial.println("Failed to attach to data network!");
+    while (true);
+  }
+  Serial.println("Attached to data network.");
+
+  Serial.println("Activating PDP context...");
+  if (!modem.activatePDP(1)) {
+    Serial.println("Failed to activate PDP context!");
+    while (true);
+  }
+  Serial.println("PDP context activated.");
 
   String response;
   String headers[] = {"User-Agent: Arduino"};
-  if (modem.httpGet("http://example.com", response, headers, 1)) {
+  if (modem.httpGet("http://vsh.pp.ua/TinyGSM/logo.txt", response, headers, 1)) {
     Serial.println("HTTP Response:");
     Serial.println(response);
   } else {

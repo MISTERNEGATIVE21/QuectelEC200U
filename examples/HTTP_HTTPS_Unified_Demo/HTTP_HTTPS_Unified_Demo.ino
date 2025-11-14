@@ -47,14 +47,14 @@ void setup() {
 #endif
 
   Serial.println("Initializing modem...");
-  if (!modem.begin()) {
+  if (!modem.modem_init()) {
     Serial.println("Failed to initialize modem!");
     while (true);
   }
   Serial.println("Modem initialized.");
 
   // Replace with your actual APN, username, and password
-  const String apn = "your.apn";
+  const String apn = "JioNet";
   const String user = "";
   const String pass = "";
 
@@ -97,7 +97,7 @@ void setup() {
   String httpResponse;
   String httpHeaders[] = {"User-Agent: Arduino-HTTP"};
   // Use a known HTTP-only URL for testing
-  if (modem.httpGet("http://example.com", httpResponse, httpHeaders, 1)) {
+  if (modem.httpGet("http://vsh.pp.ua/TinyGSM/logo.txt", httpResponse, httpHeaders, 1)) {
     Serial.println("HTTP GET successful. Response (first 500 chars):");
     Serial.println(httpResponse.substring(0, min((int)httpResponse.length(), 500)));
   } else {

@@ -53,6 +53,7 @@ class QuectelEC200U {
     bool setAPN(const String &apn);
     String getModemInfo();
     bool factoryReset();
+    bool modem_init();
     
     // Network + PDP
     bool waitForNetwork(uint32_t timeoutMs = 60000);

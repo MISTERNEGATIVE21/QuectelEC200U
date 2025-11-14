@@ -43,10 +43,32 @@ void setup() {
   QuectelEC200U modem(SerialAT);
   SerialAT.begin(9600);
 #endif
-  modem.begin();
+  
+  Serial.println("Initializing modem...");
+  if (!modem.modem_init()) {
+    Serial.println("Failed to initialize modem!");
+    while (true);
+  }
+  Serial.println("Modem initialized.");
 
-  modem.attachData("your.apn");
-  modem.activatePDP(1);
+  // Replace with your actual APN, username, and password
+  const String apn = "JioNet";
+  const String user = "";
+  const String pass = "";
+
+  Serial.println("Attaching to data network...");
+  if (!modem.attachData(apn, user, pass)) {
+    Serial.println("Failed to attach to data network!");
+    while (true);
+  }
+  Serial.println("Attached to data network.");
+
+  Serial.println("Activating PDP context...");
+  if (!modem.activatePDP(1)) {
+    Serial.println("Failed to activate PDP context!");
+    while (true);
+  }
+  Serial.println("PDP context activated.");
 
   // Upload the CA certificate to the module's filesystem
   // Note: You should use the correct CA certificate for your host
