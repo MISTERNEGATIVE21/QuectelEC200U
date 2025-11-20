@@ -915,9 +915,16 @@ bool QuectelEC200U_Adv::sendUSSD(const String &code, String &response) {
 }
 
 // ===== NTP / Clock =====
-bool QuectelEC200U_Adv::ntpSync(const String &server, int timezone) {
-  if (!sendAT("AT+QNTP=1,\"" + server + "\"", F("OK"), 1000)) return false;
-  return expectURC(F("+QNTP: 0"), 20000);
+bool QuectelEC200U_Adv::ntpSync(const String &server, int timezone, int contextID, int port) {
+    if (server.length() == 0) {
+        return false;
+    }
+    if (timezone < -48 || timezone > 56) {
+        return false;
+    }
+    String cmd = "AT+QNTP=" + String(contextID) + ",\"" + server + "\"," + String(port) + "," + String(timezone);
+    if (!sendAT(cmd, F("OK"), 1000)) return false;
+    return expectURC(F("+QNTP: 0"), 125000);
 }
 
 String QuectelEC200U_Adv::getClock() {
@@ -1279,12 +1286,7 @@ bool QuectelEC200U_Adv::ping(const String &host, int contextID, int timeout, int
   return sendAT(cmd, F("+QPING:"), timeout * 1000 * pingnum);
 }
 
-// ===== NTP =====
-bool QuectelEC200U_Adv::ntpSync(const String &server, int contextID, int port) {
-  String cmd = "AT+QNTP=" + String(contextID) + ",\"" + server + "\"," + String(port);
-  if (!sendAT(cmd, F("OK"), 1000)) return false;
-  return expectURC(F("+QNTP: 0"), 125000);
-}
+
 
 // ===== DNS =====
 bool QuectelEC200U_Adv::setDNS(const String &primary, const String &secondary, int contextID) {
@@ -1423,42 +1425,7 @@ QuectelEC200U_Adv::PDPContext QuectelEC200U_Adv::getPDPContext(int cid) {
     return ctx;
 }
 
-// ===== Audio (speaker/microphone) =====
-bool QuectelEC200U_Adv::setSpeakerVolume(int level) {
-  level = constrain(level, 0, 100);
-  return sendAT(String("AT+CLVL=") + level);
-}
 
-bool QuectelEC200U_Adv::setRingerVolume(int level) {
-  level = constrain(level, 0, 100);
-  return sendAT(String("AT+CRSL=") + level);
-}
-
-bool QuectelEC200U_Adv::setMicMute(bool mute) {
-  return sendAT(String("AT+CMUT=") + (mute ? 1 : 0));
-}
-
-bool QuectelEC200U_Adv::setMicGain(int channel, int level) {
-  level = constrain(level, 0, 15);
-  return sendAT(String("AT+QMIC=") + channel + "," + level);
-}
-
-bool QuectelEC200U_Adv::setSidetone(bool enable, int level) {
-  level = constrain(level, 0, 15);
-  return sendAT(String("AT+QSIDET=") + (enable ? 1 : 0) + "," + level);
-}
-
-bool QuectelEC200U_Adv::setAudioChannel(int channel) {
-  return sendAT(String("AT+QAUDCH=") + channel);
-}
-
-bool QuectelEC200U_Adv::setAudioInterface(const String &params) {
-  return sendAT(String("AT+QDAI=") + params);
-}
-
-bool QuectelEC200U_Adv::audioLoopback(bool enable) {
-  return sendAT(String("AT+QAUDLOOP=") + (enable ? 1 : 0));
-}
 
 // ===== Hardware =====
 String QuectelEC200U_Adv::getBatteryCharge() {
@@ -1738,35 +1705,7 @@ bool QuectelEC200U_Adv::playTextToSpeech(const String &text) {
     return sendAT("AT+QTTS=1,\"" + text + "\"");
 }
 
-// ===== More Hardware Commands =====
-bool QuectelEC200U_Adv::powerOff() {
-    logDebug(F("Powering off modem..."));
-    return sendAT(F("AT+QPOWD=1"), F("OK"), 5000);
-}
 
-void QuectelEC200U_Adv::powerOn(int pin) {
-    pinMode(pin, OUTPUT);
-    digitalWrite(pin, LOW);
-    delay(1000);
-    digitalWrite(pin, HIGH);
-    delay(2000);
-    digitalWrite(pin, LOW);
-    delay(3000);
-}
-
-bool QuectelEC200U_Adv::reboot() {
-    logDebug(F("Rebooting modem..."));
-    bool result = sendAT(F("AT+CFUN=1,1"), F("OK"), 5000);
-    if (result) {
-        _initialized = false;
-        _echoDisabled = false;
-        _simChecked = false;
-        _networkRegistered = false;
-        _state = MODEM_UNINITIALIZED;
-        delay(5000); // Wait for reboot
-    }
-    return result;
-}
 
 // ===== Remaining TCP/IP Commands =====
 bool QuectelEC200U_Adv::sendHexData(int connectID, const String &hex_string) {

@@ -193,7 +193,7 @@ class QuectelEC200U_Adv {
     bool ping(const String &host, int contextID = 1, int timeout = 4, int pingnum = 4);
     
     // NTP
-    bool ntpSync(const String &server, int contextID = 1, int port = 123);
+    bool ntpSync(const String &server, int timezone, int contextID = 1, int port = 123);
 
     // DNS
     bool setDNS(const String &primary, const String &secondary, int contextID = 1);
