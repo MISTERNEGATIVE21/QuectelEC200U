@@ -61,9 +61,9 @@ enum class ErrorCode {
 class QuectelEC200U_Adv {
   public:
     // HardwareSerial constructor (auto-configure on begin). On ESP32, optional RX/TX pins are supported.
-    QuectelEC200U(HardwareSerial &serial, uint32_t baud = 115200, int8_t rxPin = -1, int8_t txPin = -1);
+    QuectelEC200U_Adv(HardwareSerial &serial, uint32_t baud = 115200, int8_t rxPin = -1, int8_t txPin = -1);
     // Generic Stream constructor (e.g., SoftwareSerial, USB CDC). Stream must be pre-begun by the caller.
-    QuectelEC200U(Stream &stream);
+    QuectelEC200U_Adv(Stream &stream);
 
     bool begin(bool forceReinit = false);
     void enableDebug(Stream &debugStream);
@@ -136,8 +136,6 @@ class QuectelEC200U_Adv {
     // USSD
     bool sendUSSD(const String &code, String &response);
     
-    // NTP / Clock
-    bool ntpSync(const String &server = "pool.ntp.org", int timezone = 0);
     String getClock();
     bool setClock(const String &datetime);
     
@@ -181,8 +179,9 @@ class QuectelEC200U_Adv {
     void clearHistory();
     
     // Power management
-    bool powerOff();
+    void powerOn(int pin);
     bool reboot();
+    bool powerOff();
     
     // Utility functions
     String extractQuotedString(const char* response, const String &tag);

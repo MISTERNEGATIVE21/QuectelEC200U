@@ -1744,6 +1744,30 @@ bool QuectelEC200U_Adv::powerOff() {
     return sendAT(F("AT+QPOWD=1"), F("OK"), 5000);
 }
 
+void QuectelEC200U_Adv::powerOn(int pin) {
+    pinMode(pin, OUTPUT);
+    digitalWrite(pin, LOW);
+    delay(1000);
+    digitalWrite(pin, HIGH);
+    delay(2000);
+    digitalWrite(pin, LOW);
+    delay(3000);
+}
+
+bool QuectelEC200U_Adv::reboot() {
+    logDebug(F("Rebooting modem..."));
+    bool result = sendAT(F("AT+CFUN=1,1"), F("OK"), 5000);
+    if (result) {
+        _initialized = false;
+        _echoDisabled = false;
+        _simChecked = false;
+        _networkRegistered = false;
+        _state = MODEM_UNINITIALIZED;
+        delay(5000); // Wait for reboot
+    }
+    return result;
+}
+
 // ===== Remaining TCP/IP Commands =====
 bool QuectelEC200U_Adv::sendHexData(int connectID, const String &hex_string) {
     return sendAT("AT+QISENDEX=" + String(connectID) + ",\"" + hex_string + "\"");
