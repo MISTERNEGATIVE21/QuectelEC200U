@@ -1590,6 +1590,165 @@ bool QuectelEC200U_Adv::setUARTBaudRate(long rate) {
     return sendAT("AT+IPR=" + String(rate));
 }
 
+// ===== Status Control and Extended Settings =====
+String QuectelEC200U_Adv::getActivityStatus() {
+    _serial->println(F("AT+CPAS"));
+    return readResponse(1000);
+}
+
+bool QuectelEC200U_Adv::setURCIndication(const String &urc_type, bool enable) {
+    return sendAT("AT+QINDCFG=\"" + urc_type + "\"," + (enable ? "1" : "0"));
+}
+
+// ===== (U)SIM Related Commands =====
+String QuectelEC200U_Adv::getIMSI() {
+    _serial->println(F("AT+CIMI"));
+    return readResponse(1000);
+}
+
+String QuectelEC200U_Adv::getICCID() {
+    _serial->println(F("AT+QCCID"));
+    return readResponse(1000);
+}
+
+String QuectelEC200U_Adv::getPinRetries() {
+    _serial->println(F("AT+QPINC"));
+    return readResponse(1000);
+}
+
+// ===== Network Service Commands =====
+String QuectelEC200U_Adv::getDetailedSignalQuality() {
+    _serial->println(F("AT+QCSQ"));
+    return readResponse(1000);
+}
+
+String QuectelEC200U_Adv::getNetworkTime() {
+    _serial->println(F("AT+QLTS"));
+    return readResponse(1000);
+}
+
+String QuectelEC200U_Adv::getNetworkInfo() {
+    _serial->println(F("AT+QNWINFO"));
+    return readResponse(1000);
+}
+
+// ===== Call-Related Commands =====
+bool QuectelEC200U_Adv::setVoiceHangupControl(int mode) {
+    return sendAT("AT+CVHU=" + String(mode));
+}
+
+bool QuectelEC200U_Adv::hangupVoiceCall() {
+    return sendAT("AT+CHUP");
+}
+
+bool QuectelEC200U_Adv::setConnectionTimeout(int seconds) {
+    return sendAT("ATS7=" + String(seconds));
+}
+
+// ===== Phonebook Commands =====
+String QuectelEC200U_Adv::getSubscriberNumber() {
+    _serial->println(F("AT+CNUM"));
+    return readResponse(1000);
+}
+
+String QuectelEC200U_Adv::findPhonebookEntries(const String &findtext) {
+    _serial->println("AT+CPBF=\"" + findtext + "\"");
+    return readResponse(5000);
+}
+
+String QuectelEC200U_Adv::readPhonebookEntry(int index1, int index2) {
+    String cmd = "AT+CPBR=" + String(index1);
+    if (index2 != -1) {
+        cmd += "," + String(index2);
+    }
+    _serial->println(cmd);
+    return readResponse(5000);
+}
+
+bool QuectelEC200U_Adv::selectPhonebookStorage(const String &storage) {
+    return sendAT("AT+CPBS=\"" + storage + "\"");
+}
+
+bool QuectelEC200U_Adv::writePhonebookEntry(int index, const String &number, const String &text, int type) {
+    return sendAT("AT+CPBW=" + String(index) + ",\"" + number + "\"," + String(type) + ",\"" + text + "\"");
+}
+
+// ===== SMS Commands =====
+bool QuectelEC200U_Adv::setMessageFormat(int mode) {
+    return sendAT("AT+CMGF=" + String(mode));
+}
+
+bool QuectelEC200U_Adv::setServiceCenterAddress(const String &sca) {
+    return sendAT("AT+CSCA=\"" + sca + "\"");
+}
+
+String QuectelEC200U_Adv::listMessages(const String &stat) {
+    _serial->println("AT+CMGL=\"" + stat + "\"");
+    return readResponse(10000);
+}
+
+bool QuectelEC200U_Adv::setNewMessageIndication(int mode, int mt, int bm, int ds, int bfr) {
+    return sendAT("AT+CNMI=" + String(mode) + "," + String(mt) + "," + String(bm) + "," + String(ds) + "," + String(bfr));
+}
+
+// ===== Packet Domain Commands =====
+bool QuectelEC200U_Adv::gprsAttach(bool attach) {
+    return sendAT("AT+CGATT=" + String(attach ? 1 : 0));
+}
+
+bool QuectelEC200U_Adv::setGPRSClass(const String &gprs_class) {
+    return sendAT("AT+CGCLASS=\"" + gprs_class + "\"");
+}
+
+bool QuectelEC200U_Adv::setPacketDomainEventReporting(int mode) {
+    return sendAT("AT+CGEREP=" + String(mode));
+}
+
+// ===== Supplementary Service Commands =====
+bool QuectelEC200U_Adv::setCallForwarding(int reason, int mode, const String &number, int time) {
+    return sendAT("AT+CCFC=" + String(reason) + "," + String(mode) + ",\"" + number + "\"," + String(time));
+}
+
+bool QuectelEC200U_Adv::setCallWaiting(int mode) {
+    return sendAT("AT+CCWA=" + String(mode));
+}
+
+bool QuectelEC200U_Adv::setCallingLineIdentificationPresentation(bool enable) {
+    return sendAT("AT+CLIP=" + String(enable ? 1 : 0));
+}
+
+bool QuectelEC200U_Adv::setCallingLineIdentificationRestriction(int mode) {
+    return sendAT("AT+CLIR=" + String(mode));
+}
+
+// ===== More Audio Commands =====
+bool QuectelEC200U_Adv::recordAudio(const String &filename) {
+    return sendAT("AT+QAUDRD=\"" + filename + "\"");
+}
+
+bool QuectelEC200U_Adv::playAudio(const String &filename) {
+    return sendAT("AT+QAUDPLAY=\"" + filename + "\"");
+}
+
+bool QuectelEC200U_Adv::stopAudio() {
+    return sendAT("AT+QAUDSTOP");
+}
+
+bool QuectelEC200U_Adv::playTextToSpeech(const String &text) {
+    return sendAT("AT+QTTS=1,\"" + text + "\"");
+}
+
+// ===== More Hardware Commands =====
+bool QuectelEC200U_Adv::powerOff() {
+    logDebug(F("Powering off modem..."));
+    return sendAT(F("AT+QPOWD=1"), F("OK"), 5000);
+}
+
+// ===== Remaining TCP/IP Commands =====
+bool QuectelEC200U_Adv::sendHexData(int connectID, const String &hex_string) {
+    return sendAT("AT+QISENDEX=" + String(connectID) + ",\"" + hex_string + "\"");
+}
+
 
 // ===== Advanced Error Reporting and SIM =====
 String QuectelEC200U_Adv::getExtendedErrorReports() {

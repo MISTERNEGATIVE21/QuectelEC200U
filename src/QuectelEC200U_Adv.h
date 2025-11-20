@@ -272,6 +272,54 @@ class QuectelEC200U_Adv {
     String getActivityStatus();
     bool setURCIndication(const String &urc_type, bool enable);
 
+    // (U)SIM Related Commands
+    String getIMSI();
+    String getICCID();
+    String getPinRetries();
+
+    // Network Service Commands
+    String getDetailedSignalQuality();
+    String getNetworkTime();
+    String getNetworkInfo();
+
+    // Call-Related Commands
+    bool setVoiceHangupControl(int mode);
+    bool hangupVoiceCall();
+    bool setConnectionTimeout(int seconds);
+
+    // Phonebook Commands
+    String getSubscriberNumber();
+    String findPhonebookEntries(const String &findtext);
+    String readPhonebookEntry(int index1, int index2 = -1);
+    bool selectPhonebookStorage(const String &storage);
+    bool writePhonebookEntry(int index, const String &number, const String &text, int type = 129);
+
+    // SMS Commands
+    bool setMessageFormat(int mode);
+    bool setServiceCenterAddress(const String &sca);
+    String listMessages(const String &stat);
+    bool setNewMessageIndication(int mode, int mt, int bm, int ds, int bfr);
+
+    // Packet Domain Commands
+    bool gprsAttach(bool attach);
+    bool setGPRSClass(const String &gprs_class);
+    bool setPacketDomainEventReporting(int mode);
+
+    // Supplementary Service Commands
+    bool setCallForwarding(int reason, int mode, const String &number, int time = 20);
+    bool setCallWaiting(int mode);
+    bool setCallingLineIdentificationPresentation(bool enable);
+    bool setCallingLineIdentificationRestriction(int mode);
+
+    // More Audio Commands
+    bool recordAudio(const String &filename);
+    bool playAudio(const String &filename);
+    bool stopAudio();
+    bool playTextToSpeech(const String &text);
+
+    // Remaining TCP/IP Commands
+    bool sendHexData(int connectID, const String &hex_string);
+
 
     // Advanced Error Reporting and SIM
     String getExtendedErrorReports();

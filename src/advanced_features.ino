@@ -203,6 +203,155 @@ void setup() {
     Serial.println("Failed to set UART flow control!");
   }
 
+  // --- Status Control and Extended Settings Example ---
+  Serial.println("Getting Activity Status...");
+  String activityStatus = modem.getActivityStatus();
+  Serial.println("Activity Status: " + activityStatus);
+
+  Serial.println("Enabling 'csq' URC indication...");
+  if (modem.setURCIndication("csq", true)) {
+    Serial.println("'csq' URC indication enabled!");
+  } else {
+    Serial.println("Failed to enable 'csq' URC indication!");
+  }
+
+  // --- (U)SIM Related Commands Example ---
+  Serial.println("Getting IMSI...");
+  String imsi = modem.getIMSI();
+  Serial.println("IMSI: " + imsi);
+
+  Serial.println("Getting ICCID...");
+  String iccid = modem.getICCID();
+  Serial.println("ICCID: " + iccid);
+
+  Serial.println("Getting PIN Retries...");
+  String pinRetries = modem.getPinRetries();
+  Serial.println("PIN Retries: " + pinRetries);
+
+  // --- Network Service Commands Example ---
+  Serial.println("Getting Detailed Signal Quality...");
+  String csq = modem.getDetailedSignalQuality();
+  Serial.println("Detailed Signal Quality: " + csq);
+
+  Serial.println("Getting Network Time...");
+  String nitz = modem.getNetworkTime();
+  Serial.println("Network Time: " + nitz);
+
+  Serial.println("Getting Network Info...");
+  String nwInfo = modem.getNetworkInfo();
+  Serial.println("Network Info: " + nwInfo);
+
+  // --- Call-Related Commands Example ---
+  Serial.println("Setting voice hangup control to ATH only...");
+  if (modem.setVoiceHangupControl(0)) {
+    Serial.println("Voice hangup control set!");
+  } else {
+    Serial.println("Failed to set voice hangup control!");
+  }
+
+  Serial.println("Setting connection timeout to 30 seconds...");
+  if (modem.setConnectionTimeout(30)) {
+    Serial.println("Connection timeout set!");
+  } else {
+    Serial.println("Failed to set connection timeout!");
+  }
+
+  // --- Phonebook Commands Example ---
+  Serial.println("Selecting SIM phonebook storage...");
+  if (modem.selectPhonebookStorage("SM")) {
+    Serial.println("Phonebook storage set to SIM!");
+
+    Serial.println("Writing entry to index 1...");
+    if (modem.writePhonebookEntry(1, "1234567890", "Test")) {
+      Serial.println("Entry written!");
+    } else {
+      Serial.println("Failed to write entry!");
+    }
+
+    Serial.println("Reading entry from index 1...");
+    String entry = modem.readPhonebookEntry(1);
+    Serial.println("Entry 1: " + entry);
+
+  } else {
+    Serial.println("Failed to set phonebook storage!");
+  }
+
+  // --- SMS Commands Example ---
+  Serial.println("Setting SMS message format to text mode (1)...");
+  if (modem.setMessageFormat(1)) {
+    Serial.println("Message format set to text mode!");
+  } else {
+    Serial.println("Failed to set message format!");
+  }
+
+  Serial.println("Listing all unread messages...");
+  String messages = modem.listMessages("REC UNREAD");
+  Serial.println("Unread messages: " + messages);
+
+  // Set URC to route SMS to serial port
+  Serial.println("Setting new message indication to route to serial port...");
+  if (modem.setNewMessageIndication(2, 1, 0, 0, 0)) {
+    Serial.println("New message indication set!");
+  } else {
+    Serial.println("Failed to set new message indication!");
+  }
+
+  // --- Packet Domain Commands Example ---
+  Serial.println("Attaching to GPRS...");
+  if (modem.gprsAttach(true)) {
+    Serial.println("GPRS attached!");
+  } else {
+    Serial.println("Failed to attach to GPRS!");
+  }
+
+  Serial.println("Setting Packet Domain Event Reporting...");
+  if (modem.setPacketDomainEventReporting(1)) {
+    Serial.println("Packet Domain Event Reporting set!");
+  } else {
+    Serial.println("Failed to set Packet Domain Event Reporting!");
+  }
+
+  // --- Supplementary Service Commands Example ---
+  Serial.println("Enabling Call Waiting...");
+  if (modem.setCallWaiting(1)) {
+    Serial.println("Call Waiting enabled!");
+  } else {
+    Serial.println("Failed to enable Call Waiting!");
+  }
+
+  Serial.println("Enabling Calling Line Identification Presentation...");
+  if (modem.setCallingLineIdentificationPresentation(true)) {
+    Serial.println("Calling Line Identification Presentation enabled!");
+  } else {
+    Serial.println("Failed to enable Calling Line Identification Presentation!");
+  }
+
+  // --- More Audio Commands Example ---
+  Serial.println("Playing Text-to-Speech...");
+  if (modem.playTextToSpeech("Hello from Gemini")) {
+    Serial.println("TTS command sent!");
+  } else {
+    Serial.println("Failed to send TTS command!");
+  }
+
+  // --- More Hardware Commands Example ---
+  // Note: This command will power off the modem.
+  // Serial.println("Powering off modem...");
+  // if (modem.powerOff()) {
+  //   Serial.println("Modem powered off!");
+  // } else {
+  //   Serial.println("Failed to power off modem!");
+  // }
+
+  // --- Remaining TCP/IP Commands Example ---
+  // Note: This example assumes a TCP connection (connectID 0) is already open.
+  Serial.println("Sending hex data to connection 0...");
+  if (modem.sendHexData(0, "48656C6C6F")) { // "Hello" in hex
+    Serial.println("Hex data sent!");
+  } else {
+    Serial.println("Failed to send hex data!");
+  }
+
   // Add more audio examples here as needed
 }
 
