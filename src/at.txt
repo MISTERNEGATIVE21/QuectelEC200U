@@ -1,0 +1,1485 @@
+This document describes the AT command set for Quectel LTE modules EC200U series, EG800G series, EG91xU family, and EG915G‑EU. It focuses purely on technical content: syntax, parameters, behavior, and examples.
+
+Supported module families:
+
+EC200U series
+
+EG800G series
+
+EG912U series
+
+EG915U series
+
+EG915G‑EU
+
+Note: Preset files in the file system (for GNSS, BT, TTS, etc.) must not be deleted.
+
+AT Command Syntax and Conventions
+
+1.1 Basic notation
+
+AT command lines:
+
+All commands start with the prefix 'AT' or 'at'.
+
+Lines end with a termination character (default: carriage return).
+
+Commands are case‑insensitive.
+
+Result codes:
+
+Final result codes: OK, ERROR, +CME ERROR, +CMS ERROR, etc.
+
+Information responses: additional text or parameter lines between command and final result.
+
+Special symbols:
+
+<name> : Syntactic element or parameter; angle brackets do not appear in actual commands.
+
+[ ... ] : Optional parameter or optional response part; brackets do not appear in commands.
+
+Parameter rules:
+
+Comma (,) separates parameters.
+
+Strings containing spaces or certain characters must be within quotes.
+
+Optional trailing parameters may be omitted; their values remain unchanged or default.
+
+Multiple commands:
+
+Several commands can be issued on one line separated by semicolons, for example:
+AT+CSQ;AT+CREG?
+
+Termination:
+
+By default, command lines end with CR. LF may be ignored on input but is used in output formatting.
+
+1.2 Command categories
+
+Basic commands:
+
+Format: ATx or AT&x, where 'x' is the keyword.
+
+Example: ATE0, AT&F.
+
+S‑parameter commands:
+
+Format: ATSn=m
+
+Example: ATS3=13 (set line termination character).
+
+Extended commands:
+
+Have the form AT+<cmd> and support up to four sub‑types:
+
+Types of extended command:
+
+Test command: AT+CMD=?
+
+Returns information about supported parameter formats and ranges.
+
+Read command: AT+CMD?
+
+Reports current settings.
+
+Write command: AT+CMD=<p1>[,<p2>...]
+
+Sets parameter values.
+
+Execute command: AT+CMD
+
+Triggers an action or queries data without parameters.
+
+1.3 Character sets
+
+Character sets are controlled by AT+CSCS. Supported sets include:
+
+"GSM"
+
+"IRA"
+
+"UCS2"
+
+"HEX"
+
+"PCCP936"
+
+The selected character set affects SMS text, cell broadcast text, and phonebook strings.
+
+1.4 Interfaces and URCs
+
+Main interfaces: main UART, auxiliary UARTs, USB modem port, USB AT port.
+
+URCs (unsolicited result codes) indicate events such as:
+
+Incoming calls (RING)
+
+Incoming SMS (+CMTI / +CMT)
+
+Registration status changes (+CREG, +CEREG)
+
+Signal strength changes (+CSQ / +QCSQ URCs if enabled)
+
+URC routing and filtering are controlled mainly by AT+QURCCFG and AT+QINDCFG.
+
+1.5 Recommended power‑off
+
+AT+QPOWD performs a graceful software power‑off:
+
+Logs the module off the network.
+
+Saves internal state.
+
+Outputs a POWERED DOWN indication and pulls STATUS low.
+
+After POWERED DOWN and STATUS low, the host should cut VBAT (recommended delay about 1 second).
+
+If POWERED DOWN is not seen within about 65 seconds, VBAT may be cut forcibly.
+
+General Commands
+
+2.1 ATI – Display module identification
+
+Syntax:
+
+ATI
+
+Description:
+
+Returns manufacturer, model, and firmware revision.
+
+Typical response:
+
+Quectel
+
+EC200U
+
+Revision: EC200UCNAAR01A04M08
+
+OK
+
+2.2 AT+GMI / AT+CGMI – Manufacturer identification
+
+Syntax:
+
+AT+GMI=?
+
+AT+GMI
+
+AT+CGMI=?
+
+AT+CGMI
+
+Description:
+
+Returns manufacturer string, typically "Quectel".
+
+Response:
+
+Quectel
+
+OK
+
+2.3 AT+GMM / AT+CGMM – Model identification
+
+Syntax:
+
+AT+GMM=?
+
+AT+GMM
+
+AT+CGMM=?
+
+AT+CGMM
+
+Description:
+
+Returns module model, e.g. EC200U, EG800G, etc.
+
+2.4 AT+GMR / AT+CGMR – Firmware revision
+
+Syntax:
+
+AT+GMR=?
+
+AT+GMR
+
+AT+CGMR=?
+
+AT+CGMR
+
+Description:
+
+Returns firmware revision string.
+
+2.5 AT+GSN / AT+CGSN – IMEI and serial number
+
+Syntax:
+
+AT+GSN=?
+
+AT+GSN=<snt>
+
+AT+GSN
+
+AT+CGSN=?
+
+AT+CGSN=<snt>
+
+AT+CGSN
+
+Parameters:
+
+<snt> = 0 : Return serial number.
+
+<snt> = 1 : Return IMEI.
+
+Execution without parameter:
+
+Returns IMEI only.
+
+Errors:
+
++CMS ERROR:<err> if ME‑related error occurs.
+
+2.6 AT&F – Restore factory defaults
+
+Syntax:
+
+AT&F
+
+AT&F<value>
+
+Description:
+
+Restores AT configuration to factory defaults for the selected profile (commonly profile 0).
+
+2.7 AT&V – Show current configuration
+
+Syntax:
+
+AT&V
+
+Description:
+
+Displays many AT settings (E, Q, V, X, S‑registers, etc.) in a human‑readable snapshot.
+
+2.8 AT&W – Store configuration to profile
+
+Syntax:
+
+AT&W
+
+AT&W<n>
+
+Description:
+
+Saves current AT configuration into user profile (usually profile 0).
+
+Many commands note that changes persist only if AT&W is executed.
+
+2.9 ATZ – Restore from user profile
+
+Syntax:
+
+ATZ
+
+ATZ<value>
+
+Description:
+
+Restores settings from a stored profile (commonly profile 0).
+
+2.10 ATQ – Result code echo mode
+
+Syntax:
+
+ATQ<n>
+
+Parameters:
+
+0 : Enable final result codes (OK/ERROR).
+
+1 : Suppress final result codes.
+
+Notes:
+
+Does not affect informational text, only final result codes.
+
+Take care when using 1; debugging is more difficult.
+
+2.11 ATV – Result code format
+
+Syntax:
+
+ATV<value>
+
+Parameters:
+
+0 : Numeric codes only, short format.
+
+1 : Verbose text codes, CR/LF framed.
+
+Example mapping:
+
+0 = OK
+
+1 = CONNECT
+
+2 = RING
+
+3 = NO CARRIER
+
+4 = ERROR
+
+6 = NO DIALTONE
+
+7 = BUSY
+
+8 = NO ANSWER
+
+2.12 ATE – Command echo mode
+
+Syntax:
+
+ATE<value>
+
+Parameters:
+
+0 : Echo OFF.
+
+1 : Echo ON.
+
+2.13 A/ – Repeat previous command line
+
+Syntax:
+
+A/
+
+Description:
+
+Repeats the last executed AT command line exactly.
+
+Does not require the "AT" prefix.
+
+2.14 ATS3 – Command line termination character
+
+Syntax:
+
+ATS3?
+
+ATS3=<n>
+
+Range:
+
+0–127, default 13 (CR).
+
+2.15 ATS4 – Response formatting character
+
+Syntax:
+
+ATS4?
+
+ATS4=<n>
+
+Range:
+
+0–127, default 10 (LF).
+
+2.16 ATS5 – Command line editing character
+
+Syntax:
+
+ATS5?
+
+ATS5=<n>
+
+Range:
+
+0–127, default 8 (backspace).
+
+2.17 ATX – Result code and call progress behavior
+
+Syntax:
+
+ATX<value>
+
+Values:
+
+0 to 4 (increasing call progress detail and tone detection).
+
+Higher values typically enable CONNECT <text> and dial‑tone/busy detection.
+
+2.18 AT+CFUN – Function mode
+
+Syntax:
+
+AT+CFUN=?
+
+AT+CFUN?
+
+AT+CFUN=<fun>[,<rst>]
+
+Parameters:
+
+<fun>:
+
+0 : Minimum functionality (RF and some subsystems may be off).
+
+1 : Full functionality.
+
+4 : RF off (airplane mode).
+
+<rst> (only meaningful when <fun>=1):
+
+0 : No reset.
+
+1 : Reset before entering full functionality.
+
+Description:
+
+Controls power level and RF state of the module.
+
+2.19 AT+CMEE – Error message format
+
+Syntax:
+
+AT+CMEE=?
+
+AT+CMEE?
+
+AT+CMEE=<n>
+
+Parameters:
+
+0 : Disable +CME ERROR; use generic ERROR.
+
+1 : Numeric +CME ERROR codes.
+
+2 : Text +CME ERROR descriptions.
+
+Recommendation:
+
+Use 2 during development.
+
+2.20 AT+CSCS – Select TE character set
+
+Syntax:
+
+AT+CSCS=?
+
+AT+CSCS?
+
+AT+CSCS=<chset>
+
+Supported <chset>:
+
+"GSM", "HEX", "PCCP936", "IRA", "UCS2"
+
+2.21 AT+QURCCFG – URC output routing
+
+Syntax:
+
+AT+QURCCFG=?
+
+AT+QURCCFG="urcport"
+
+AT+QURCCFG="urcport",<urc_port_value>
+
+<urc_port_value>:
+
+"usbat" : USB AT port
+
+"usbmodem": USB modem port
+
+"uart1" : main UART
+
+"uart2" : UART2
+
+"uart3" : UART3
+
+"usbnmea" : specific USB serial
+
+"all" : send URCs to all ports
+
+UART Control Commands
+
+3.1 AT&C – DCD function mode
+
+Syntax:
+
+AT&C[<value>]
+
+Parameters:
+
+0 : DCD always ON.
+
+1 : DCD ON only when carrier is present.
+
+3.2 AT&D – DTR function mode
+
+Syntax:
+
+AT&D[<value>]
+
+Parameters:
+
+0 : Ignore DTR.
+
+1 : Transition low→high causes return to command mode, keeping call.
+
+2 : Transition low→high causes call drop and return to command mode.
+
+3.3 AT+IFC – UART flow control
+
+Syntax:
+
+AT+IFC=?
+
+AT+IFC?
+
+AT+IFC=<dce_by_dte>,<dte_by_dce>
+
+Values:
+
+0 : No flow control.
+
+2 : RTS/CTS hardware flow control.
+
+Typical:
+
+AT+IFC=2,2 for full RTS/CTS.
+
+3.4 AT+ICF – UART frame format and parity
+
+Syntax:
+
+AT+ICF=?
+
+AT+ICF?
+
+AT+ICF=[<format>[,<parity>]]
+
+Formats:
+
+1 : 8N2
+
+2 : 8E1 or 8O1 (depending on parity)
+
+3 : 8N1
+
+Parity (for format=2):
+
+0 : odd
+
+1 : even
+
+3.5 AT+IPR – UART fixed baud rate
+
+Syntax:
+
+AT+IPR=?
+
+AT+IPR?
+
+AT+IPR=<rate>
+
+Parameters:
+
+0 : Autobaud (adaptive).
+
+Fixed rates: module supports a set of discrete baud rates (e.g. 1200–2 Mbit/s; exact list given in original manual).
+
+Notes:
+
+Host must match the configured baud.
+
+Not changeable while in CMUX mode.
+
+3.6 AT+CBAUD – Configure main UART baud
+
+Syntax:
+
+AT+CBAUD=?
+
+AT+CBAUD?
+
+AT+CBAUD=<rate>
+
+Description:
+
+Similar to AT+IPR but explicitly for main UART; rates are module‑specific.
+
+3.7 AT+QIPR – UART2/UART3 baud rate
+
+Syntax:
+
+AT+QIPR=?
+
+AT+QIPR?
+
+AT+QIPR=<port>,<rate>
+
+Ports:
+
+1 : UART2
+
+2 : UART3
+
+3.8 AT+QICF – UART2/UART3 frame format and parity
+
+Syntax:
+
+AT+QICF=?
+
+AT+QICF?
+
+AT+QICF=<port>,<format>[,<parity>]
+
+Parameters: same meaning as AT+ICF, with <port> specifying UART2 or UART3.
+
+3.9 AT+QIFC – UART2/UART3 flow control
+
+Syntax:
+
+AT+QIFC=?
+
+AT+QIFC?
+
+AT+QIFC=<port>[,<dce_by_dte>,<dte_by_dce>]
+
+Status Control and Extended Settings
+
+4.1 AT+CPAS – Equipment activity status
+
+Syntax:
+
+AT+CPAS=?
+
+AT+CPAS
+
+Responses:
+
++CPAS:<pas>
+
+<pas>:
+
+0 : Ready
+
+2 : Unknown
+
+3 : Ringing
+
+4 : Call in progress or on hold
+
+Note:
+
+Not supported on some data‑only modules.
+
+4.2 AT+CEER – Extended error report
+
+Syntax:
+
+AT+CEER=?
+
+AT+CEER?
+
+AT+CEER=<mode>
+
+AT+CEER
+
+<mode> examples:
+
+0 : +CEER:<locationID>,<causeID>
+
+1 : +CEER:<locationID>,<causeText> or +CEER:<category>,<locationID>,<causeText>
+
+Description:
+
+Gives extended reason for last failed procedure (call setup, attach, etc.).
+
+4.3 AT+QINDCFG – URC indication configuration
+
+Syntax:
+
+AT+QINDCFG=?
+
+AT+QINDCFG=<URC_type>[,<enable>[,<save_to_nvram>]]
+
+Key <URC_type> values:
+
+"all" : master switch for URCs.
+
+"csq" : signal strength change.
+
+"act" : RAT/AcT change (GSM/EGPRS/WCDMA/LTE/…).
+
+"smsincoming" : SMS URCs (+CMT, +CMTI, +CDS).
+
+"ring" : RING URCs.
+
+"psm" : PSM entry/exit.
+
+"rach" : random access channel result.
+
+others as listed in the original list.
+
+<enable>:
+
+0 : disabled.
+
+1 : enabled.
+
+<save_to_nvram>:
+
+0 : do not save.
+
+1 : save configuration.
+
+4.4 AT+QRDY – Initialization status
+
+Syntax:
+
+AT+QRDY
+
+Description:
+
+Returns a URC indicating module is ready after boot.
+
+May be used by host to know when to start configuration.
+
+4.5 AT+QCFG – Extended settings group
+
+QCFG is a container for many sub‑settings:
+
+General syntax:
+
+AT+QCFG="name"
+
+AT+QCFG="name",<...>
+
+AT+QCFG="name"=?
+
+Important sub‑commands:
+
+4.5.1 QCFG "nwscanmode" – Network search mode
+
+Syntax:
+
+AT+QCFG="nwscanmode"
+
+AT+QCFG="nwscanmode",<mode>
+
+<mode>:
+
+Values select automatic, LTE‑only, GSM‑only, etc. (module‑dependent mapping).
+
+4.5.2 QCFG "band" – Search bands
+
+Syntax:
+
+AT+QCFG="band"
+
+AT+QCFG="band",<gsm_mask>,<lte_mask>
+
+Description:
+
+Restricts which GSM/LTE bands can be used.
+
+4.5.3 QCFG "creg/emergency" – Emergency network display
+
+Controls how emergency registration info is indicated in +CREG.
+
+4.5.4 QCFG "qoos" – Out‑of‑service search timers
+
+Settings for how often the module searches when out of service.
+
+4.5.5 QCFG "airplanecontrol" – Airplane mode control
+
+Controls behavior of airplane (RF off) mode in conjunction with AT+CFUN and possibly GPIO pins.
+
+4.5.6 QCFG "usbnet" – USB network protocol
+
+Chooses ECM/RNDIS/NCM etc. for USB data interface.
+
+4.5.7 QCFG "nat/cid" and "nat/subnet" – NAT settings
+
+Enable NAT for PDP context and configure subnet parameters for NAT.
+
+4.5.8 QCFG "usbnetmac" – USB network MAC address
+
+Allows configuring the MAC address used on USB network adapter.
+
+4.5.9 QCFG "apready" – AP_Ready pin behavior
+
+Controls the logic of the AP_READY pin handshake with host.
+
+4.5.10 QCFG "pkalive/ip" – PDP keepalive
+
+Configures keepalive for IP PDN contexts.
+
+4.5.11 QCFG "ledmode" and "led/sim" – Status LED behavior
+
+Configures network status LED patterns and which SIM is indicated in dual‑SIM setups.
+
+4.5.12 QCFG "tone/incoming" – Incoming call ringtone
+
+Types and patterns for ringing output.
+
+4.5.13 QCFG "sleepind/level" and "wakeupin/level" – Sleep/wake pins
+
+Configures signal levels and behaviors for sleep indication and wakeup pin.
+
+4.5.14 QCFG "ntp" – NTP retransmission count and interval
+
+For modules using NTP functions; configures retries and intervals.
+
+4.5.15 QCFG "esmfail/times" – LTE registration failure threshold
+
+Number of consecutive LTE registration failures before falling back to GSM.
+
+4.5.16 QCFG "rtc/cfg" – RTC startup configuration
+
+Behavior of RTC at boot.
+
+4.5.17 QCFG "pdn/pco" – PDN PCO behavior
+
+Whether PDN requests carry certain PCO fields.
+
+(Other QCFG sub‑commands follow the same pattern: simple name, one or more integer/enum parameters, and persistent configuration.)
+
+(U)SIM Related Commands
+
+5.1 AT+CIMI – Read IMSI
+
+Syntax:
+
+AT+CIMI
+
+Response:
+
+<IMSI>
+OK
+
+5.2 AT+CLCK – Facility lock
+
+Syntax:
+
+AT+CLCK="fac",<mode>[,"password"[,<class>]]
+
+Used for SIM locks (PIN locks, call barring, etc.), not always needed in basic data use.
+
+5.3 AT+CPIN – Enter PIN
+
+Syntax:
+
+AT+CPIN=?
+
+AT+CPIN?
+
+AT+CPIN="<pin>"
+
+Response examples:
+
++CPIN: READY
+
++CPIN: SIM PIN
+
++CPIN: SIM PUK
+
+5.4 AT+CPWD – Change password
+
+Syntax:
+
+AT+CPWD="fac","old","new"
+
+5.5 AT+CSIM – Generic SIM access
+
+Raw APDU interface; used for advanced SIM operations.
+
+5.6 AT+CRSM – Restricted SIM access
+
+More structured SIM access (e.g. READ BINARY, UPDATE RECORD).
+
+5.7 AT+QCCID – Show ICCID
+
+Syntax:
+
+AT+QCCID
+
+Response:
+
++QCCID:<iccid>
+
+OK
+
+5.8 AT+QINISTAT – SIM initialization status
+
+Syntax:
+
+AT+QINISTAT
+
+Reports whether SIM initialization is in progress or complete.
+
+5.9 AT+QSIMDET – SIM detection
+
+Configures card detect behavior; optional for designs that want SIM hot‑swap detection.
+
+5.10 AT+QSIMSTAT – SIM insertion status URC
+
+URC form:
+
++QSIMSTAT:<slot>,<state>
+
+<state> = 0: not inserted, 1: inserted.
+
+5.11 AT+CCHO / AT+CGLA / AT+CCHC – Logical channel control
+
+Used for UICC logical channels (advanced SIM applications).
+
+5.12 AT+QPINC – Remaining PIN/PUK retries
+
+Syntax:
+
+AT+QPINC
+
+Response lines:
+
++QPINC:"SC",<retries>
+
++QPINC:"PUK",<retries>
+
+etc.
+
+Network Service Commands
+
+6.1 AT+COPS – Operator selection
+
+Syntax:
+
+AT+COPS=?
+
+AT+COPS?
+
+AT+COPS=<mode>[,<format>[,<oper>[,<AcT>]]]
+
+6.2 AT+CREG / AT+CGREG / AT+CEREG – Registration status
+
+AT+CREG : CS domain
+
+AT+CGREG: PS domain (GPRS)
+
+AT+CEREG: EPS/LTE
+
+Syntax (example for CEREG):
+
+AT+CEREG=?
+
+AT+CEREG?
+
+AT+CEREG=<n>
+
+<n> = 0/1/2 for URC control.
+
+6.3 AT+CSQ – Basic signal quality
+
+Syntax:
+
+AT+CSQ
+
+Response:
+
++CSQ:<rssi>,<ber>
+
+6.4 AT+QCSQ – Detailed signal
+
+Syntax:
+
+AT+QCSQ
+
+Response includes RAT and metrics such as RSRP, RSRQ, SNR for LTE.
+
+6.5 AT+CPOL – Preferred operator list
+
+Manages stored preferred PLMN list.
+
+6.6 AT+COPN – Operator names
+
+Lists known operator names and codes.
+
+6.7 AT+CTZU – Automatic time zone update
+
+Controls whether time zone is updated from network.
+
+6.8 AT+CTZR – Time zone reporting
+
+Controls URC when time zone changes.
+
+6.9 AT+QLTS – Network time
+
+Syntax:
+
+AT+QLTS[=<mode>]
+
+Response:
+
++QLTS:"YYYY/MM/DD,HH:MM:SS±TZ",<dst>
+
+6.10 AT+QNWINFO – Network info
+
+Syntax:
+
+AT+QNWINFO
+
+Example:
+
++QNWINFO:"FDD LTE","46001","LTE BAND 3",1850
+
+6.11 AT+QSPN – Operator name
+
+Returns service provider name.
+
+6.12 AT+CIND – Indicator state
+
+Reports phone‑related indicators (e.g., service, signal, etc.).
+
+Call-Related Commands
+
+7.1 ATA – Answer call
+
+Syntax:
+
+ATA
+
+7.2 ATD – Dial a number
+
+Syntax:
+
+ATD<string>[;<mgsm>]
+
+Dial string: digits, *, #, +, A–C.
+
+Modifiers: I/i for CLIR, G/g for CUG, ';' for voice, etc.
+
+7.3 ATH – Disconnect
+
+Syntax:
+
+ATH
+
+7.4 AT+CVHU – Voice hang up control
+
+Controls whether ATH affects voice calls.
+
+7.5 AT+CHUP – Hang up voice call
+
+Syntax:
+
+AT+CHUP
+
+7.6 "+++" – Escape from data mode
+
+Timing:
+
+Guard times around the +++ sequence (no data for about 1 second before and after).
+
+7.7 ATO – Return to data mode
+
+Syntax:
+
+ATO
+
+7.8 ATS0 – Auto‑answer rings
+
+Syntax:
+
+ATS0?
+
+ATS0=<n>
+
+n = 0 disables auto‑answer; otherwise number of RINGs.
+
+7.9 ATS7 – Connection timeout
+
+Syntax:
+
+ATS7?
+
+ATS7=<n>
+
+n in seconds, 0 disables.
+
+7.10 AT+CSTA – Type of address
+
+Syntax:
+
+AT+CSTA=?
+
+AT+CSTA?
+
+AT+CSTA=<type>
+
+type typical values: 129, 145, 161.
+
+7.11 AT+CLCC – List current calls
+
+Returns all active/held/waiting calls with indexes, directions, statuses.
+
+7.12 AT+CRC – Extended incoming call indication
+
+Enables extended RING indications.
+
+7.13 AT+QECCNUM – Emergency call numbers
+
+Configures emergency numbers in the module.
+
+7.14 AT+QHUP – Hang up with specific cause
+
+Allows setting explicit release cause when hanging up.
+
+7.15 AT+QCHLDIPMPTY – VoLTE conference hang‑up
+
+Used in VoLTE conference calling context.
+
+Phonebook Commands
+
+8.1 AT+CNUM – Subscriber number
+
+Returns own number(s) if available.
+
+8.2 AT+CPBF – Find entries
+
+Syntax:
+
+AT+CPBF="<findtext>"
+
+Finds phonebook entries matching the substring.
+
+8.3 AT+CPBR – Read entries
+
+Syntax:
+
+AT+CPBR=<index1>[,<index2>]
+
+8.4 AT+CPBS – Select storage
+
+Syntax:
+
+AT+CPBS="<storage>"
+
+8.5 AT+CPBW – Write entry
+
+Syntax:
+
+AT+CPBW=<index>,"<number>",<type>,"<text>"
+
+SMS Commands
+
+9.1 AT+CSMS – Select message service
+
+Typically set to 1.
+
+9.2 AT+CMGF – Message format
+
+Syntax:
+
+AT+CMGF=?
+
+AT+CMGF?
+
+AT+CMGF=<mode>
+
+<mode>=0: PDU; <mode>=1: text.
+
+9.3 AT+CSCA – Service center address
+
+Syntax:
+
+AT+CSCA?
+
+AT+CSCA="<sca>"[,<tosca>]
+
+9.4 AT+CPMS – Preferred message storage
+
+Syntax:
+
+AT+CPMS="mem1","mem2","mem3"
+
+9.5 AT+CMGD – Delete message
+
+Syntax:
+
+AT+CMGD=<index>[,<delflag>]
+
+9.6 AT+CMGL – List messages
+
+Syntax:
+
+AT+CMGL="<stat>"
+
+9.7 AT+CMGR – Read message
+
+Syntax:
+
+AT+CMGR=<index>
+
+9.8 AT+CMGS – Send message
+
+Syntax (text mode):
+
+AT+CMGS="<da>"
+
+'>' prompt, then message text, then CTRL+Z.
+
+9.9 AT+CMMS – More messages to send
+
+Controls multi‑message sending behavior.
+
+9.10 AT+CMGW – Write to storage
+
+Writes an SMS to storage for later sending.
+
+9.11 AT+CMSS – Send from storage
+
+Syntax:
+
+AT+CMSS=<index>[,"<da>"[,<tosca>]]
+
+9.12 AT+CNMA – New message acknowledgment
+
+Used for network side requiring explicit ACK.
+
+9.13 AT+CNMI – SMS event reporting
+
+Syntax:
+
+AT+CNMI=?
+
+AT+CNMI?
+
+AT+CNMI=<mode>,<mt>,<bm>,<ds>,<bfr>
+
+Common setting:
+
+AT+CNMI=2,1,0,0,0 (URCs +CMTI with storage).
+
+9.14 AT+CSDH – Show text mode parameters
+
+Controls whether extra text mode fields are displayed.
+
+9.15 AT+CSMP – Set text mode parameters
+
+Controls PID, DCS, validity period, etc.
+
+9.16 AT+QCMGS / AT+QCMGR – Concatenated SMS
+
+Extensions:
+
+AT+QCMGS to send long messages.
+
+AT+QCMGR to read and reassemble long messages.
+
+Packet Domain Commands
+
+10.1 AT+CGATT – Attach/detach PS
+
+Syntax:
+
+AT+CGATT?
+
+AT+CGATT=<state>
+
+<state>:
+
+0: detach, 1: attach.
+
+10.2 AT+CGDCONT – Define PDP context
+
+Syntax:
+
+AT+CGDCONT=?
+
+AT+CGDCONT?
+
+AT+CGDCONT=<cid>,"<PDP_type>","<APN>"[,optional parameters]
+
+PDP_type:
+
+"IP", "IPV6", "IPV4V6", etc.
+
+10.3 AT+CGQREQ / AT+CGQMIN – QoS profile
+
+Set requested and minimum QoS profiles.
+
+10.4 AT+CGACT – Activate/deactivate PDP context
+
+Syntax:
+
+AT+CGACT?
+
+AT+CGACT=<state>,<cid>
+
+10.5 AT+CGDATA – Enter data state
+
+For CSD/packet data; used in some dial‑up scenarios.
+
+10.6 AT+CGPADDR – Show PDP address
+
+Syntax:
+
+AT+CGPADDR[=<cid>]
+
+10.7 AT+CGCLASS – GPRS mobile station class
+
+Configures class (A/B/C) if applicable.
+
+10.8 AT+CGREG – PS domain registration status
+
+Similar to CREG, but PS‑domain specific.
+
+10.9 AT+CGEREP – Packet domain event reporting
+
+Controls URCs for PDP events.
+
+10.10 AT+CGSMS – Select service for MO SMS
+
+Selects whether SMS uses CS or PS domain under certain conditions.
+
+10.11 AT+CEREG – EPS network registration
+
+As described earlier; LTE/EPS registration.
+
+10.12 AT+QGDCNT / AT+QAUGDCNT – Packet data counter
+
+QGDCNT: query data counter.
+
+QAUGDCNT: configure auto‑save of counters.
+
+10.13 AT+CGCONTRDP – Read dynamic PDN parameters
+
+Returns PDN parameters: DNS, gateway, etc.
+
+10.14 AT+QNETDEVCTL – Configure network adapter data call
+
+Associates PDP context with network interface on host (USB network adapters, etc.).
+
+Supplementary Service Commands
+
+11.1 AT+CCFC – Call forwarding
+
+11.2 AT+CCWA – Call waiting
+
+11.3 AT+CHLD – Call related supplementary services
+
+11.4 AT+CLIP – Calling line identification presentation
+
+11.5 AT+CLIR – Calling line identification restriction
+
+11.6 AT+COLP – Connected line presentation
+
+11.7 AT+CSSN – Supplementary service notifications
+
+11.8 AT+CUSD – Unstructured Supplementary Service Data (USSD)
+
+Syntax:
+
+AT+CUSD=<n>[,"<str>"[,<dcs>]]
+
+Audio Commands
+
+12.1 AT+CLVL – Loudspeaker volume
+
+12.2 AT+QAUDLOOP – Audio loop test
+
+12.3 AT+QAUDRD – Record audio file
+
+12.4 AT+QPSND – Play audio to uplink/downlink
+
+12.5 AT+QAUDPLAY – Play audio file
+
+12.6 AT+QAUDSTOP – Stop playing
+
+12.7 AT+QAUDMOD – Audio mode
+
+12.8 AT+QIIC – I2C read/write (audio related)
+
+12.9 AT+QDAI – Digital audio configuration
+
+12.10 AT+QAUDSW – Codec switch
+
+12.11 AT+QAUDPASW – Audio PA type switch
+
+12.12 AT+QTTS – Play text (TTS)
+
+12.13 AT+QWTTS – Play/send text to far end
+
+12.14 AT+QTTSETUP – TTS parameters
+
+12.15 AT+QAUDCFG="urc" – Audio sample rate URC
+
+12.16 AT+QICMIC – Microphone gain
+
+12.17 AT+QRXGAIN – Downlink gain
+
+12.18 AT+QICSIDET – Sidetone gain
+
+12.19 AT+QLDTMF – Local DTMF tone
+
+12.20 AT+QWDTMF – DTMF to far end
+
+12.21 AT+VTS – DTMF send
+
+12.22 AT+QLTONE / AT+QLTONEX – Local custom tones
+
+12.23 AT+QTONEDET – Enable/disable DTMF detection
+
+Hardware Related Commands
+
+13.1 AT+QPOWD – Power off module
+
+Described earlier; graceful shutdown.
+
+13.2 AT+CCLK – Clock
+
+Get/set real‑time clock.
+
+13.3 AT+CBC – Battery charge
+
+Reports battery level and charging state if supported.
+
+13.4 AT+QADC – ADC value
+
+Read analog inputs.
+
+13.5 AT+QWIFISCAN / AT+QWIFISCANEX – Wi‑Fi scan
+
+Synchronous and asynchronous scanning of Wi‑Fi APs by the module (if Wi‑Fi support is present).
+
+Appendices (Conceptual, No Boilerplate)
+
+14.1 CME ERROR codes summary
+
++CME ERROR:<err> indicates ME specific errors.
+
+14.2 CMS ERROR codes summary
+
++CMS ERROR:<err> indicates SMS subsystem errors.
+
+14.3 URC summary
+
+List of all URCs used by this firmware, such as:
+
+RING, NO CARRIER, +CMTI, +CMT, +CREG, +CEREG, +QIND:..., +QSIMSTAT:..., +QNWINFO, etc.
+
+14.4 SMS character set conversion tables
+
+Logical mapping between GSM 7‑bit, IRA, UCS2, etc.
+
+Important only for low‑level SMS encoding/decoding.
+
+14.5 Release cause text for AT+CEER
+
+Mapping of location IDs and cause IDs to descriptive text.
+
+End of cleaned Quectel EC200U / EG800G / EG91xU / EG915G‑EU AT Commands text.

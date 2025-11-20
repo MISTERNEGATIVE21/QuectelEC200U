@@ -177,6 +177,32 @@ void setup() {
   String simStatus = modem.getSIMStatus();
   Serial.println("SIM Status: " + simStatus);
 
+  // --- General Commands Example ---
+  Serial.println("Setting command echo OFF...");
+  modem.setCommandEcho(false);
+  delay(1000); // Give modem time to process
+
+  Serial.println("Setting command echo ON...");
+  modem.setCommandEcho(true);
+  delay(1000);
+
+  Serial.println("Setting verbose error messages...");
+  modem.setErrorMessageFormat(2);
+  delay(1000);
+
+  // Note: restoreFactoryDefaults will reset the modem's settings
+  // Serial.println("Restoring factory defaults...");
+  // modem.restoreFactoryDefaults();
+  // delay(5000); // Wait for modem to reset
+
+  // --- UART Control Example ---
+  Serial.println("Setting UART flow control to RTS/CTS (2,2)...");
+  if (modem.setUARTFlowControl(2, 2)) {
+    Serial.println("UART flow control set!");
+  } else {
+    Serial.println("Failed to set UART flow control!");
+  }
+
   // Add more audio examples here as needed
 }
 

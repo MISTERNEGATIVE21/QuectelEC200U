@@ -1,0 +1,1999 @@
+
+
+
+
+
+
+
+
+
+EC200U&EG915U Series TCP/IP Application Note
+
+LTE Standard Module Series
+
+Version: 1.1
+
+Date: 2021-08-17
+
+Status: Released
+
+
+
+Our aim is to provide customers with timely and comprehensive service. For any assistance, please contact our company headquarters:
+
+Quectel Wireless Solutions Co., Ltd.
+Building 5, Shanghai Business Park Phase III (Area B), No.1016 Tianlin Road, Minhang District, Shanghai 200233, China
+Tel: +86 21 5108 6236
+Email: info@quectel.com
+
+Or our local office. For more information, please visit: http://www.quectel.com/support/sales.htm.
+
+For technical support, or to report documentation errors, please visit: http://www.quectel.com/support/technical.htm
+Or email to support@quectel.com.
+
+General Notes
+Quectel offers the information as a service to its customers. The information provided is based upon customers' requirements. Quectel makes every effort to ensure the quality of the information it makes available. Quectel does not make any warranty as to the information contained herein, and does not accept any liability for any injury, loss or damage of any kind incurred by use of or reliance upon the information. All information supplied herein is subject to change without prior notice.
+
+Disclaimer
+While Quectel has made efforts to ensure that the functions and features under development are free from errors, it is possible that these functions and features could contain errors, inaccuracies and omissions. Unless otherwise provided by valid agreement, Quectel makes no warranties of any kind, implied or express, with respect to the use of features and functions under development. To the maximum extent permitted by law, Quectel excludes all liability for any loss or damage suffered in connection with the use of the functions and features under development, regardless of whether such loss or damage may have been foreseeable.
+
+Duty of Confidentiality
+The Receiving Party shall keep confidential all documentation and information provided by Quectel, except when the specific permission has been granted by Quectel. The Receiving Party shall not access or use Quectel's documentation and information for any purpose except as expressly provided herein. Furthermore, the Receiving Party shall not disclose any of the Quectel's documentation and information to any third party without the prior written consent by Quectel. For any noncompliance to the above requirements, unauthorized use, or other illegal or malicious use of the documentation and information, Quectel will reserve the right to take legal action.
+
+
+Copyright
+The information contained here is proprietary technical information of Quectel. Transmitting, reproducing, disseminating and editing this document as well as using the content without permission are forbidden. Offenders will be held liable for payment of damages. All rights are reserved in the event of a patent grant or registration of a utility model or design.
+
+Copyright (c) Quectel Wireless Solutions Co., Ltd. 2021. All rights reserved.
+
+
+
+
+
+
+
+
+
+
+About the Document
+
+Revision History
+
+
+Version
+Date
+Author
+Description
+-
+2020-05-19
+Herry GENG
+Creation of the document
+1.0
+2021-06-15
+Herry GENG
+First official release
+1.1
+2021-08-17
+Herry GENG
+Added an applicable module series EG915U.
+
+
+
+Contents
+
+About the Document	3
+Contents	4
+Table Index	6
+1 Introduction	7
+1.1. Description of Data Access Modes	7
+2 TCP/IP AT Commands	9
+2.1. AT Command Introduction	9
+2.1.1. Definitions	9
+2.1.2. AT Command Syntax	9
+2.2. Declaration of AT Command Examples	10
+2.3. The Process of Using TCP/IP AT Commands	10
+2.4. AT Commands	12
+2.4.1. AT+QICFG	Configure Optional Parameters	12
+2.4.2. AT+QICSGP	Configure Parameters of a TCP/IP Context	20
+2.4.3. AT+QIACT	Activate a PDP Context	21
+2.4.4. AT+QIDEACT	Deactivate a PDP Context	22
+2.4.5. AT+QIACTEX	Activate a PDP Context Asynchronously	23
+2.4.6. AT+QIDEACTEX	Deactivate a PDP Context Asynchronously	24
+2.4.7. AT+QIOPEN	Open a Socket Service	25
+2.4.8. AT+QICLOSE	Close a Socket Service	27
+2.4.9. AT+QISTATE	Query Socket Service Status	28
+2.4.10. AT+QISEND	Send Data	30
+2.4.11. AT+QIRD	Read the Received TCP/IP Data	33
+2.4.12. AT+QISENDEX	Send Hex String Data	35
+2.4.13. AT+QISWTMD	Switch Data Access Mode	36
+2.4.14. AT+QPING	Ping a Remote Server	37
+2.4.15. AT+QNTP	Synchronize Local Time with NTP Server	38
+2.4.16. AT+QIDNSCFG	Configure Address of DNS Server	39
+2.4.17. AT+QIDNSGIP	Get IP Address by Domain Name	40
+2.4.18. AT+QISDE	Control Whether to Echo the Data for AT+QISEND	41
+2.4.19. AT+QIGETERROR	Query the Error Code of the Last AT Command	42
+2.5. Description of URCs	42
+2.5.1.	+QIURC: "closed"	URC Indicating Connection Closed	42
+2.5.2.	+QIURC: "recv"	URC Indicating Incoming Data	43
+2.5.3.	+QIURC: "incoming full"	URC Indicating Incoming Connection Full	43
+2.5.4.	+QIURC: "incoming"	URC Indicating Incoming Connection	44
+2.5.5.	+QIURC: "pdpdeact"	URC Indicating PDP Deactivation	44
+3 Examples	45
+3.1. Configure and Activate a Context	45
+3.1.1. Configure a Context	45
+3.1.2. Activate a Context	45
+3.1.3. Deactivate a Context	45
+3.1.4. Set up Asynchronous/Synchronous Activation or Deactivation Operation	45
+3.2. TCP Client Works in Buffer Access Mode	47
+3.2.1. Set up a TCP Client Connection and Enter into Buffer Access Mode	47
+3.2.2. Send Data in Buffer Access Mode	48
+3.2.3. Receive Data from Remote Server in Buffer Access Mode	48
+3.2.4. Close a Connection	49
+3.3. TCP Client Works in Transparent Access Mode	49
+3.3.1. Set up a TCP Client Connection and Enter into Transparent Access Mode	49
+3.3.2. Send Data in Transparent Access Mode	49
+3.3.3. Receive Data from Remote Server in Transparent Access Mode	49
+3.3.4. Close a TCP Client	49
+3.4. TCP Client Works in Direct Push Mode	50
+3.4.1. Set up a TCP Client Connection and Enter into Direct Push Mode	50
+3.4.2. Send Data in Direct Push Mode	50
+3.4.3. Receive Data from Remote Server in Direct Push Mode	51
+3.4.4. Close a TCP Client	51
+3.5. TCP Server Works in Buffer Access Mode	51
+3.5.1. Start a TCP Server	51
+3.5.2. Accept TCP Incoming Connection	51
+3.5.3. Receive Data from Incoming Connection	51
+3.5.4. Close a TCP Server	52
+3.6. Example of UDP Service	52
+3.6.1. Start a UDP Service	52
+3.6.2. Send UDP Data to Server	53
+3.6.3. Receive Data from Remote	53
+3.6.4. Close a UDP Service	53
+3.7. PING	53
+3.8. Synchronize Local Time	54
+3.9. Get Last Error Code	54
+4 Summary of Error Codes	55
+5 Appendix Reference	57
+Table Index
+Table 1: Types of AT Commands	9
+Table 2: Summary of Error Codes	55
+Table 3: Related Document	57
+Table 4: Terms and Abbreviations	57
+
+
+1 Introduction
+Quectel LTE Standard EC200U and EG915U series modules feature an embedded TCP/IP stack, which enables the host to access the Internet directly via AT commands. This greatly reduces the dependence on external PPP and TCP/IP protocol stacks and thus minimizes the costs.
+
+EC200U and EG915U series modules provide the following socket services: TCP client, UDP client, TCP server and UDP server.
+
+
+
+1.1. Description of Data Access Modes
+
+EC200U and EG915U series modules support the following three kinds of data access modes:
+
+* Buffer access mode
+* Direct push mode
+* Transparent access mode
+
+When opening a socket service via AT+QIOPEN, the data access mode can be specified by the
+<access_mode>. After a socket service is opened, you can switch the access mode via AT+QISWTMD.
+1. In buffer access mode, data can be sent via AT+QISEND, and if the module has received the data from the Internet, it will buffer the data and report the URC +QIURC: "recv",<connectID>. Data can be read via AT+QIRD.
+
+2. In direct push mode, data can be sent via AT+QISEND, and if the module has received the data from the Internet, the data will be outputted to COM port directly in the following format:
++QIURC: "recv",<connectID>,<currectrecvlength><CR><LF><data>.
+
+3. In transparent access mode, the corresponding port (such as UART port, USB modem port, etc.) enters the exclusive mode. The data received from COM port will be sent to the Internet directly, and the data received from Internet will be outputted via COM port directly. +++ can be used to exit from transparent access mode. When OK is returned, the module will be switched to buffer access mode. AT+QISWTMD can be used to switch the data access mode back to transparent access mode.
+
+* Exit from transparent access mode
+
+To exit from the transparent access mode, +++ or DTR (AT&D1 should be set first) can be used. To prevent the +++ from being misinterpreted as data, the following sequence should be followed:
+
+
+1) Do not input any character within 1 s or longer before inputting +++.
+2) Input only +++ within 1 s. Input no other character during the time.
+3) Do not input any character within 1 s after +++ has been inputted.
+4) Use +++ or DTR (AT&D1 should be set first) to make the module exit from transparent access mode, and wait until OK is returned.
+
+* Return to transparent access mode
+
+1) By AT+QISWTMD. Specify the <access_mode> as 2 when executing this command. When transparent access mode has been entered successfully, CONNECT will be returned.
+2) By ATO. After a connection exits from transparent access mode, executing ATO will switch the data access mode back to transparent access mode again. When transparent access mode has been entered successfully, CONNECT will be returned. If no connection has entered transparent access mode before, ATO will return NO CARRIER.
+
+
+
+
+
+
+
+
+2 TCP/IP AT Commands
+This chapter describes AT commands related to TCP/IP.
+
+
+
+2.1. AT Command Introduction
+
+2.1.1. Definitions
+
+* <CR>	Carriage return character.
+* <LF>	Line feed character.
+* <...>	Parameter name. Angle brackets do not appear on the command line.
+* [...]	Optional parameter of a command or an optional part of TA information response. Square brackets do not appear on the command line. When an optional parameter is not given in a command, the new value equals to its previous value or the default settings, unless otherwise specified.
+* Underline  Default setting of a parameter.
+
+
+2.1.2. AT Command Syntax
+
+All command lines must start with AT or at and end with <CR>. Information responses and result codes always  start  and  end  with  a  carriage  return  character  and  a  line  feed  character:
+<CR><LF><response><CR><LF>. In tables presenting commands and responses throughout this document, only the commands and responses are presented, and <CR> and <LF> are deliberately omitted.
+
+
+Table 1: Types of AT Commands
+
+
+
+
+Test Command	AT+<cmd>=?
+
+Test the existence of corresponding Write Command and return information about the type, value, or range of its parameter.
+
+Read Command	AT+<cmd>?	Check the current parameter value of a corresponding Write Command.
+Write Command	AT+<cmd>=<p1>[,<p2>[,<p3>[...]]] Set user-definable parameter value.
+
+
+
+
+Execution Command	AT+<cmd>	Return a specific information parameter or perform a specific action.
+
+
+
+2.2. Declaration of AT Command Examples
+
+The AT command examples in this document are provided to help you familiarize with AT commands and learn how to use them. The examples, however, should not be taken as Quectel's recommendation or suggestions about how you should design a program flow or what status you should set the module into. Sometimes multiple examples may be provided for one AT command. However, this does not mean that there exists a correlation among these examples and that they should be executed in a given sequence.
+
+
+
+2.3. The Process of Using TCP/IP AT Commands
+
+Through TCP/IP AT commands, the host can configure a PDP context, activate/deactivate the PDP context, open/close a socket service and send/receive data via socket service. The following figure illustrates how to use TCP/IP AT commands.
+
+
+
+
+Notes:
+1. Please note that users need to wait for the final response (for example "OK", "CME ERROR", "CMS ERROR") of the last AT command you
+entered before you enter the next AT command. You can reboot the module if the module fails to get response in 60s.
+2. Reboot the module if the module has not got response of AT+QIACT in 150s or response of AT+QICLOSE in 10s and AT+QIDEACT in 40s.
+3. It is NOT recommended to frequently reboot the module. When the module has been continuously rebooted for 3 times due to failed AT command execution, it can be rebooted immediately for the first time after that. If it still fails, reboot the module after 10 minutes for the second time, and reboot after 30 minutes for the third time, one hour for the fourth time, etc.
+
+
+Figure 1: Flow Chart of Using TCP/IP AT Commands
+
+
+2.4. AT Commands
+
+2.4.1. AT+QICFG	Configure Optional Parameters
+
+This command configures optional parameters.
+
+AT+QICFG	Configure Optional Parameters
+Test Command
+AT+QICFG=?
+Response
++QICFG: "transpktsize",(range of supported <transpktsize>s)
++QICFG: "transwaittm",(range of supported <transwaittm>s)
++QICFG: "dataformat",(list of supported <send_data_format>s), (list of supported <recv_data_format>s)
++QICFG: "viewmode",(list of supported <view_mode>s)
++QICFG: "udp/sendmode",(list of supported <mode>s)
++QICFG: "udp/readmode",(list of supported <mode>s)
++QICFG: "tcp/accept",(list of supported <accept>s)
++QICFG: "passiveclosed",(list of supported <closed>s)
++QICFG: "tcp/twrecycle",(list of supported <fast_recyle>s)
++QICFG: "close/mode",(list of supported <close_mode>s)
++QICFG: "pdp/retry",(list of supported <pdpmode>s),(list of supported <ratmode>s),(range of supported <counts>s),(range of supported <retry_time>s)
++QICFG: "recvind",(list of supported <show_length>s)
++QICFG: "sendinfo",(list of supported <send_view_mode>s)
++QICFG: "tcp/keepalive",(list of supported <enable>s),(range of supported <idle_time>s),(range of supported <interval_time>s), (range of supported <probe_cnt>s)
++QICFG: "tcp/retranscfg",(range of supported <retrains_cnt>s), (range of supported <retrains_period>s)
++QICFG: "send/auto",(range of supported <connectID>s),(range of supported <period>s),<msg_auto>
++QICFG: "recv/ignore",(range of supported <connectID>s),<ms g_ignore>
++QICFG: "formatcfg",(list of supported <format>s)
++QICFG: "qisend/timeout",(range of supported <timeout>s)
+
+OK
+Write Command
+Configure the packet size for transparent access mode AT+QICFG="transpktsize"[,<tr anspktsize>]
+Response
+If the optional parameter is omitted, query the current setting:
++QICFG: "transpktsize",<transpktsize> OK
+If the optional parameter is specified, set the length of the data to be
+
+
+
+sent:
+OK
+
+If there is any error:
+ERROR
+Write Command
+Configure the waiting time for transparent access mode AT+QICFG="transwaittm"[,<tr answaittm>]
+Response
+If the optional parameter is omitted, query the current setting:
++QICFG: "transwaittm",<transwaittm>
+
+OK
+If the optional parameter is specified, configure the waiting time:
+OK
+
+If there is any error:
+ERROR
+Write Command
+Configure the format of the data to be sent or received (only for non-transparent mode) AT+QICFG="dataformat"[,<se nd_data_format>,<recv_data_ format>]
+Response
+If the optional parameters are omitted, query the current setting:
++QICFG: "dataformat",<send_data_format>,<recv_data_forma t>
+
+OK
+If the optional parameters are specified, configure the format of the data to be sent or received:
+Ok
+
+If there is any error:
+ERROR
+Write Command
+Configure the output format of received	data	(only	for non-transparent mode) AT+QICFG="viewmode"[,<vie w_mode>]
+Response
+If the optional parameter is omitted, query the current setting:
++QICFG: "viewmode",<view_mode> OK
+If the optional parameter is specified, configure the output format of the received data:
+OK
+
+If there is any error:
+ERROR
+Write Command Configure the mode when sending UDP data
+AT+QICFG="udp/sendmode"[,
+<mode>]
+Response
+If the optional parameter is omitted, query the current setting:
++QICFG: "udp/sendmode",<mode>
+
+OK
+
+
+
+
+If the optional parameter is specified, configure the UDP data sending mode:
+OK
+
+If there is any error:
+ERROR
+Write Command Configure the mode when reading UDP data
+AT+QICFG="udp/readmode"[,
+<mode>]
+Response
+If the optional parameter is omitted, query the current setting:
++QICFG: "udp/readmode",<mode> OK
+If the optional parameter is specified, configure the UDP data read mode:
+OK
+
+If there is any error:
+ERROR
+Write Command
+Enable or disable the automatic reception of the TCP connection from the client AT+QICFG="tcp/accept"[,<ac cept>]
+Response
+If the optional parameter is omitted, query the current setting:
++QICFG: "tcp/accept",<accept> OK
+If the optional parameter is specified, enable or disable the automatic reception of the TCP connection from the client:
+OK
+
+If there is any error:
+ERROR
+Write Command
+Enable or disable the passive close of TCP connection when the server is closed AT+QICFG="passiveclosed"[,
+<closed>]
+Response
+If the optional parameter is omitted, query the current setting:
++QICFG: "passiveclosed",<closed> OK
+If the optional parameter is specified, enable or disable the passive close of TCP connection:
+OK
+
+If there is any error:
+ERROR
+
+
+Write Command
+Enable or disable quick release of PCB when disconnecting AT+QICFG="tcp/twrecyle"[,<f ast_recyle>]
+Response
+If the optional parameter is omitted, query the current setting:
++QICFG: "tcp/twrecyle",<fast_recyle>
+
+OK
+If the optional parameter is specified, enable or disable quick release of PCB:
+OK
+
+If there is any error:
+ERROR
+Write Command
+Enable or disable displaying the return information of AT+QICLOSE in URC form AT+QICFG="close/mode"[,<cl ose_mode>]
+Response
+If the optional parameter is omitted, query the current setting:
++QICFG: "close/mode",<close_mode> OK
+If the optional parameter is specified, enable or disable displaying the return information of AT+QICLOSE in the form of URC:
+OK
+
+If there is any error:
+ERROR
+Write Command
+Configure PDP activation and deactivation retry times and time AT+QICFG="pdp/retry",<pdp mode>,<ratmode>[,<counts>,
+<retry_time>]
+Response
+If the optional parameter is omitted, query the current setting:
++QICFG: "pdp/retry",<pdpmode>,<ratmode>,<counts>,<retry_ti me>
+
+If the optional parameter is specified, configure PDP activation and deactivation retry times and time
+OK
+
+If there is any error:
+ERROR
+Write Command
+Enable or disable data length presence in URC reported after data reception in buffer mode AT+QICFG="recvind"[,<show
+_length>]
+Response
+If the optional parameter is omitted, query the current setting:
+[+QICFG: "recvind",<show_length>] OK
+If the optional parameter is specified, enable or disable data length presence in URC reported:
+OK
+
+
+
+If there is any error:
+ERROR
+Write Command
+Enable or disable display the return information of AT+QISEND in URC form AT+QICFG="sendinfo",<send
+_view_mode>
+Response
+If the optional parameter is omitted, query the current setting:
++QICFG: "sendinfo",<send_view_mode>
+
+If the optional parameter is specified, enable or disable display the execution information of AT+QISEND in URC form
+OK
+
+If there is any error:
+ERROR
+Write Command
+Configure whether to send TCP keep-alive information.
+AT+QICFG="tcp/keepalive",<e nable>[,<idle_time>,<interval_ time>,<probe_cnt>]
+Response
+If the optional parameters are omitted, query the current setting:
++QICFG: "tcp/keepalive",<enable>,<idle_time>,<interval_time>,
+<probe_cnt> OK
+If the optional parameters are specified, configure whether to send TCP keep-alive information:
+OK
+
+If there is any error:
+ERROR
+Write Command
+Configure TCP retransmission parameters AT+QICFG="tcp/retranscfg"[,
+<retrains_cnt>[,<retrains_peri od>]]
+Response
+If the optional parameter is omitted, query the current setting:
++QICFG: "tcp/retranscfg",<retrains_cnt>,<retrains_period> OK
+If the optional parameter is specified, configure TCP retransmission parameters:
+OK
+
+If there is any error:
+ERROR
+Write Command
+Configure to send the specified data on the specified channel AT+QICFG="send/auto",<con nectID>[,<period>[,<msg_aut o>]]
+Response
+If the optional parameters are omitted, query the current setting:
++QICFG: "send/auto",<connectID>,<period>,<msg_auto> OK
+If the optional parameters are specified, configure to send the
+
+
+
+specified data on the specified channel:
+OK
+
+If there is any error:
+ERROR
+Write Command
+Configure to ignore the specific data received by the specified channel AT+QICFG="recv/ignore",<co nnectID>[,<msg_ignore>]
+Response
+If the optional parameter are omitted, query the current setting:
++QICFG: "recv/ignore",<connectID>,<msg_ignore> OK
+If the optional parameter is specified, configure to ignore the specific data received by the specified channel:
+OK
+
+If there is any error:
+ERROR
+Write Command
+Set the ">" format configuration when AT+QISEND enters the transparent transmission mode AT+QICFG="formatcfg"[,<for mat>]
+Response
+If the optional parameter is omitted, query the current setting:
++QICFG: "formatcfg",<format> OK
+If the optional parameter is specified, set the ">" format configuration when AT+QISEND enters the transparent transmission mode:
+OK
+
+If there is any error:
+ERROR
+Write Command
+Set the timeout time for no data input when AT+QISEND enters the	transparent	transmission mode AT+QICFG="qisend/timeout"[,
+<timeout>]
+Response
+If the optional parameter is omitted, query the current setting:
++QICFG: "qisend/timeout",<timeout> OK
+If the optional parameter is specified, set the timeout time for no data input when AT+QISEND enters the transparent transmission mode: OK
+
+If there is any error:
+ERROR
+Maximum Response Time
+/
+Characteristic
+The command takes effect immediately.
+
+
+
+The configuration will not be saved.
+
+
+Parameter
+
+<transpktsize>	Integer type. The max length of the data packet to be sent. Range: 1-1460.
+Default value: 1024. Unit: byte.
+<transwaittm>	Integer type. In transparent access mode, if the length of data received from the port is less than the specified value of <transpktsize>, after exceeding the time of <transwaittm>, data will be sent directly. Range: 0-20. Default value: 2. Unit: ms.
+<send_data_format>  Integer type. The format of the data to be sent. The suffix "0x" is not needed when the mode is set as Hex mode as the module will automatically form two bytes to one ASCII code.
+0 Text mode
+1 Hex mode
+<recv_data_format>  Integer type. The format of the data to be received. The suffix "0x" is not needed when the mode is set as Hex mode as the module will automatically form two bytes to one ASCII code.
+0 Text mode
+1 Hex mode
+<view_mode>	Integer type. The output mode of the received data.
+0 data header\r\ndata.
+1 data header,data.
+<mode>	Integer type.
+0 Disable block mode.
+1 Enable stream mode.
+<accept>	Integer type. Enable/Disable auto accepting incoming TCP connection from the client.
+0 Disable
+1 Enable
+<closed>	Integer type. Enable or disable the passive close of TCP connection when the server is closed.
+0 Disable
+1 Enable
+<fast_recyle>	Enable/Disable quick release of PCB when disconnecting.
+0 Disable
+1 Enable
+<close_mode>	Integer type. Enable or disable display AT+QISEND command execution information in URC form.
+0 Disable
+1 Enable
+<pdpmode>	Integer type. Set PDP activation or deactivation mode.
+0 Deactivation mode
+
+
+
+1 Activation mode
+<ratmode>	Set the network mode.
+0 4G mode
+1 2G mode
+<counts>	Integer type. The number of retry times. Range: 2-4. Default value: 4. Please note that if the value is 4, the actual number of activation or deactivation is 5 times.
+<retry_time>	Integer type. The maximum time for a single activation and deactivation.
+Unit: second.
+2G: Activation configuration range is from 5 to 30, default value: 10; Deactivation configuration range is from 2 to 8, default value: 5.
+4G: Activation configuration range is from 5 to 8, default value: 8; Deactivation configuration range is from 2 to 6, default value: 6.
+<show_length>	Integer type. Enable or disable data length presence in URC reported after data reception in TCP/IP buffer mode.
+0 Disable
+1 Enable
+<send_view_mode>	Integer type. Enable or disable display AT+QISEND command execution information in URC form.
+0 Disable
+1 Enable
+<enable>	Integer type. Enable or disable sending of TCP keep-alive information.
+0 Disable
+1 Enable
+<idle_time>	Integer type. Indicates the cycle time of keepalive triggered. Range: 1-1800.
+Unit: second .
+<interval_time>	Integer type. Indicates the interval of send a packet in a cycle time. Range: 25-100. Unit: second .
+<probe_cnt>	Integer type. The count of packet transmission in a cycle time. Range: 3-10.
+<retrains_cnt>	Integer type. The number of TCP retransmissions. Range: 3-12. Default value: 8. Unit: time.
+<retrains_period>	Integer type. The period of TCP retransmissions. Range: 5-60. Default value: 6. Unit: second.
+<connectID>	Integer type. The socket ID. Range: 1-11.
+<period>	Integer type. The period that is configured for the specified channel to send the specified data. Range:20-65535. Unit: second.
+<msg_auto>	String type. Data sent in hexadecimal. The max length is 400 bytes.
+<msg_ignore>	String type. Data received in hexadecimal. The max length is 400 bytes.
+<format>	Integer type. Set the prompt format after AT+QISEND. The configuration values of S3 and S4 are ATS3 and ATS4.
+0	"S3S4>"
+1	"S3S4>S3S4"
+<timeout>	Integer type. Timeout of AT+QISEND input time. Range: 0-120. Default value: 5. Unit: second.
+
+
+2.4.2. AT+QICSGP	Configure Parameters of a TCP/IP Context
+
+This command configures the <APN>, <username>, <password> and other parameters of a TCP/IP context. The QoS settings can be configured by AT+CGQMIN and AT+CGQREQ. For more details about the AT commands, refer to document [1].
+
+AT+QICSGP	Configure Parameters of a TCP/IP Context
+Test Command
+AT+QICSGP=?
+Response
++QICSGP: (range of supported <contextID>s),(range of supported <context_type>s),<APN>,<username>,<passw ord>,(range of supported <authentication>s)
+
+OK
+Write Command
+Query the configuration of a specific context
+AT+QICSGP=<contextID>
+Response
++QICSGP: <context_type>,<APN>,<username>,<passw ord>,<authentication>
+
+OK
+Write Command Configure the context
+AT+QICSGP=<contextID>[,<context_t ype>,<APN>[,<username>,<passwor
+d>)[,<authentication>]]]
+Response
+OK
+
+If there is any error:
+ERROR
+Maximum Response Time
+/
+
+Characteristic
+The command takes effect immediately. The configurations will not be saved.
+
+Parameter
+
+<contextID>	Integer type. The context ID. Range: 1-7.
+<context_type>	Integer type. The protocol type.
+1 IPv4
+2 IPv6
+3 IPv4v6
+<APN>	String type. The access point name.
+<username>	String type. The username. The maximum length: 127 bytes.
+<password>	String type. The password. The maximum length: 127 bytes.
+<authentication>	Integer type. The authentication methods.
+0 None
+1 PAP
+2 CHAP
+
+
+Example
+
+
+
+2.4.3. AT+QIACT	Activate a PDP Context
+
+Before activating a PDP context via AT+QIACT, the context should be configured by AT+QICSGP. After activation, the IP address can be queried via AT+QIACT?.
+
+When VoLTE is disabled or not supported, the range of <contextID> is 1-7. The module can support a maximum of 7 PDP contexts activated; when VoLTE is enabled, the range of <contextID> is 1-5, and the module supports a maximum of 5 PDP contexts activated. The actual number of activated PDP contexts depends on the (U)SIM card? Depending on the network, it may take at most 150 seconds to return OK or ERROR after AT+QIACT is executed. The maximum timeout return time can be configured by AT+QICFG="pdp/retry",<pdpmode>,<ratmode>[,<counts>,<retry_time>], before the response is returned, other AT commands cannot be executed.
+
+AT+QIACT	Activate a PDP Context
+Test Command
+AT+QIACT=?
+Response
++QIACT: (range of supported <contextID>s)
+
+OK
+Read command
+AT+QIACT?
+Response
+Return the list of the currently activated contexts and their IP addresses:
++QIACT: 1,<context_state>,<context_type>[,<IPv4_addre ss>][,<IPv6_address>]
+...
++QIACT: 7,<context_state>,<context_type>[,<IPv4_addre ss>][,<IPv6_address>]
+
+OK
+Write Command
+Activate a specified PDP context
+AT+QIACT=<contextID>
+Response
+OK
+
+If there is any error:
+ERROR
+
+
+Maximum Response Time
+150 seconds, depending on the network.
+Characteristic
+/
+
+
+Parameter
+
+<contextID>	Integer type. The context ID. Range: 1-7.
+<context_state>	Integer type. The context state.
+0 Deactivated
+1 Activated
+<context_type>	Integer type. The protocol type.
+1 IPv4
+2 IPv6
+3 IPv4v6
+<Ipv4_address>	String type. The local IPv4 address after the context is activated.
+<Ipv6_address>	String type. The local IPv6 address after the context is activated.
+
+
+
+
+2.4.4. AT+QIDEACT	Deactivate a PDP Context
+
+This command deactivates a specific context and closes all TCP/IP connections set up in this context. Depending on the network, it may take at most 40 seconds to return OK or ERROR after AT+QIDEACT is executed. The maximum timeout return time can be configured by AT+QICFG="pdp/retry",<pdpmode>,<ratmode>[,<counts>,<retry_time>], before the response is returned, other AT commands cannot be executed.
+
+AT+QIDEACT	Deactivate a PDP Context
+Test Command
+AT+QIDEACT=?
+Response
++QIDEACT: (range of supported <contextID>s)
+
+OK
+Write Command
+Deactivate a specified PDP context
+AT+QIDEACT=<contextID>
+Response
+OK
+
+If there is any error:
+ERROR
+Maximum Response Time
+40 seconds, depending on the network.
+
+
+Characteristic
+/
+
+
+Parameter
+
+<contextID>	Integer type. The context ID. Range: 1-7.
+
+
+
+2.4.5. AT+QIACTEX	Activate a PDP Context Asynchronously
+
+Before using AT+QIACTEX to activate a PDP context asynchronously, you need to use AT+QICSGP to configure the context. After the context is activated, you can query the IP address via AT+QIACTEX?.
+
+When VoLTE is disabled or not supported, the range of <contextID> is 1-7. The module can support a maximum of 7 PDP contexts activated; when VoLTE is enabled, the range of <contextID> is 1-5, and the module supports a maximum of 5 PDP contexts activated. The actual number of activated PDP contexts depends on the (U)SIM card? After executing AT+QIACTEX, it returns OK or ERROR immediately, URC
++QIACTEX will display the PDP context activation result. Depending on the network, the maximum URC return	time	can	be	configured	by AT+QICFG="pdp/retry",<pdpmode>,<ratmode>[,<counts>,<retry_time>].
+
+AT+QIACTEX	Activate a PDP Context Asynchronously
+Test Command
+AT+QIACTEX=?
+Response
++QIACTEX: (range of supported <contextID>s),(list of supported<view_mode>s)
+
+OK
+Read Command
+AT+QIACTEX?
+Response
+Return the list of the currently activated contexts and their IP addresses:
++QIACTEX: 1,<context_state>,<context_type>[,<IPv4_ad dress>][,<IPv6_address>]
+...
++QIACTEX: 7,<context_state>,<context_type>[,<IPv4_ad dress>][,<IPv6_address>]
+
+OK
+Write Command AT+QIACTEX=<contextID>[,<view_m ode>]
+Response
+If <view_mode>=0, activate a specified context:
+OK
+
++QIACTEX: <contextID>,<err>
+
+
+
+If <view_mode>=1, activate a specified context:
+OK
+
++QIACTEX: <contextID>,<err>[,<context_type>[,<IPv4_a ddress>][,<IPv6_address>]
+
+If there is any error:
+ERROR
+Maximum Response Time
+150 seconds, depending on the network.
+Characteristic
+/
+
+
+Parameter
+
+<contextID>	Integer type. The context ID. Range: 1-7.
+<view_mode>	Integer type. Whether to display the IP address and type.
+0 Disable
+1 Enable
+<context_state>	Integer type. The context state.
+0 Deactivated
+1 Activated
+<context_type>	Integer type. The protocol type.
+1 IPv4
+2 IPv6
+3 IPv4v6
+<Ipv4_address>	String type. The local IPv4 address after the context is activated.
+<Ipv6_address>	String type. The local IPv6 address after the context is activated.
+<err>	Error codes. Please refer to Chapter 1.
+
+
+2.4.6. AT+QIDEACTEX	Deactivate a PDP Context Asynchronously
+
+This command deactivates a specific context asynchronously and closes all TCP/IP connections set up in this context. After executing AT+QIDEACTEX, it returns OK or ERROR immediately, URC +QIDEACTEX will display the PDP context deactivation result. Depending on the network, the maximum URC return time can be configured by AT+QICFG="pdp/retry",<pdpmode>,<ratmode>[,<counts>,<retry_time>].
+
+AT+QIDEACTEX	Deactivate a PDP Context Asynchronously
+Test Command
+AT+QIDEACTEX=?
+Response
++QIDEACTEX: (range of supported <contextID>s)
+
+OK
+
+
+Write Command
+AT+QIDEACTEX=<contextID>
+Response
+OK
+
++QIDEACTEX=<contextID>,<err>
+
+If there is any error:
+ERROR
+Maximum Response Time
+40 seconds, depending on the network.
+Characteristic
+/
+
+
+Parameter
+
+<contextID>	Integer type. The context ID. Range: 1-7.
+<err>	Error codes. Please refer to Chapter 1.
+
+
+2.4.7. AT+QIOPEN	Open a Socket Service
+
+The command opens a socket service. The service type can be specified by <service_type>. The data access mode (buffer access mode, direct push mode and transparent access mode) can be configured by
+<access_mode>. The URC +QIOPEN indicates whether the socket service has been opened successfully.
+
+1. If <service_type> is "TCP LISTENER", the module works as TCP server. After accepting a new TCP connection, the module will automatically specify a <connectID> and report a URC as +QIURC: "incoming",<connectID>,<serverID>,<remoteIP>,<remote_port>. The range of <connectID> is 0-11. The type of this new incoming connection is "TCP INCOMING" and the <access_mode> of "TCP INCOMING" is the same with that of "TCP LISTENER".
+
+2. If <service_type> is "UDP SERVICE", UDP data can be sent to or received from the remote IP via
+<local_port>.
+
+* Send data: execute AT+QISEND=<connectID>,<send_length>,<remoteIP>,<remote_port>.
+* Receive	data	in	direct	push	mode:	the	module	reports	the	URC	as	+QIURC: "recv",<connectID>,<currentrecvlength>,<remoteIP>,<remote_port><CR><LF><data>.
+* Receive data in buffer access mode: the module reports  the URC as +QIURC: "recv",<connectID>, and then data can be read via AT+QIRD=<connectID>.
+
+3. It is suggested to wait for 150 seconds for +QIOPEN: <connectID>,<err> to be outputted. If the URC cannot be received in 150 seconds after the Write Command is executed, AT+QICLOSE should be used to close the socket, and you can also configure <connect_timeout> to control the waiting time.
+
+
+
+AT+QIOPEN	Open a Socket Service
+Test Command
+AT+QIOPEN=?
+Response
++QIOPEN: (range of supported <contextID>s),(range of supported <connectID>s),"TCP/UDP/TCP LISTENER/UDP SERVICE","<IP_address>/<domain_name>",<remote_port>,< local_port>,(range of supported<access_mode>s),(range of supported<tcp_client_maxnum>s),(range   of   supported
+<connect_timeout>s)
+
+OK
+Write Command AT+QIOPEN=<contextID>,<conn ectID>,<service_type>,"<IP_add ress>/<domain_name>",<remote
+_port>[,<local_port>[,<access_ mode>[,<tcp_client_maxnum>[,
+<connect_timeout>]]]]
+Response
+If the service is in transparent access mode (<access_mode>=2) and is opened successfully:
+CONNECT
+
+If there is any error:
+ERROR
+Error description can be got via AT+QIGETERROR.
+
+If the service is in buffer access mode (<access_mode>=0) or direct push mode (<access_mode>=1):
+OK
+
++QIOPEN: <connectID>,<err>
+
+<err> is 0 when the service is opened successfully. In other cases,
+<err> is not 0.
+Maximum Response Time
+150 seconds, depending on the network.
+Characteristic
+/
+
+
+Parameter
+
+<contextID>	Integer type. Context ID. Range: 1-7.
+<connectID>	Integer type. Socket ID. Range: 0-11.
+<service_type>	String type. Socket service type.
+"TCP"	Start a TCP connection as a client
+"UDP"	Start a UDP connection as a client
+"TCP LISTENER"	Start a TCP server to listen to TCP connection "UDP SERVICE"	Start a UDP service
+<IP_address>	String type.
+If <service_type> is "TCP" or "UDP", it indicates the IP address of remote
+
+
+server, such as 220.180.239.212.
+If <service_type> is "TCP LISTENER" or "UDP SERVICE", please input 127.0.0.1.
+<domain_name>	String type. The domain name address of the remote server.
+<remote_port>	String type. The port of the remote server. Range: 0-65535.	It is valid only when <service_type> is "TCP" or "UDP".
+<local_port>	The local port. Range: 0-65535.
+If <service_type> is "TCP LISTENER" or "UDP SERVICE", this parameter must be specified.
+If <service_type> is "TCP" or "UDP", the local port will be assigned automatically if <local_port> is 0. Otherwise, the local port is assigned as specified.
+<access_mode>	Integer type. The data access mode of the socket service.
+0 Buffer access mode
+1 Direct push mode
+2 Transparent access mode
+<tcp_client_maxnum> Integer type. Range: 0-11. It only takes effect when the <service_type> socket service type is "TCP LISTENER". The maximum number of client connections can be controlled. The default value is 11.
+<connect_timeout>    Integer type. Range:10-150. Unit: second.
+<err>	Error codes. Please refer to Chapter 1.
+
+
+2.4.8. AT+QICLOSE	Close a Socket Service
+
+This command closes a specified socket service. Depending on the network, it will take at most 10 seconds (default value, can be modified by <timeout>) to return OK or ERROR after AT+QICLOSE is executed. Before the response is returned, other AT commands cannot be executed.
+
+AT+QICLOSE	Close a Socket Service
+Test Command
+AT+QICLOSE=?
+Response
++QICLOSE: (range of supported <connectID>s),(range of supported <timeout>s)
+
+OK
+Write Command AT+QICLOSE=<connectID>[,<timeou t>]
+Response
+1. If <close_mode>=0:
+If the socket service is closed successfully:
+OK
+
+If it is failed to close the socket service:
+ERROR
+
+2. If <close_mode>=1:
+
+
+
+If the socket service is closed successfully:
+OK
+
++QIURC: "closed",<connectID>
+
+If it is failed to close the socket service:
+ERROR
+Maximum Response Time
+10 s by default, depending on the setting of <timeout>.
+Characteristic
+/
+
+
+Parameter
+
+<connectID>   Integer type. The Socket ID. Range: 0-11.
+<timeout>	Integer type. The timeout value for the response to be outputted. If the FIN ACK of the other peer is not received within <timeout>, the module will be forced to close the socket. Range: 0-65535. Default value: 10. Unit: second.
+<close_mode> Integer type. Enable or disable display AT+QISEND command execution information in URC form.
+0 Disable
+1 Enable
+
+
+2.4.9. AT+QISTATE	Query Socket Service Status
+
+The command queries the socket service status. If the <query_type> is 0, it will return the statuses of all existing socket services in the specified context. If the <query_type> is 1, it will return the status of a specified socket service.
+
+AT+QISTATE	Query Socket Service Status
+Test Command
+AT+QISTATE=?
+Response
+OK
+Read/Execution Command
+AT+QISTATE? or AT+QISTATE
+Response
+Return the status of all existing connections:
++QISTATE: <connectID>,<service_type>,<IP_addres s>,<remote_port>,<local_port>,<socket_state>,<cont extID>,<serverID>,<access_mode>,<AT_port>
+[...]
+
+OK
+Write Command
+Response
+
+
+
+
+
+
+
+If <query_type>=0, query the connection
+Return the
+status
+of
+all
+existing
+connections
+in
+a
+
+
+status of a specified context
+AT+QISTATE=<query_type>,<contextID>
+specified context:
++QISTATE: <connectID>,<service_type>,<IP_addres s>,<remote_port>,<local_port>,<socket_state>,<cont extID>,<serverID>,<access_mode>,<AT_port>
+[...]
+
+OK
+Write Command
+If <query_type>=1, query the connection status of a specified socket service AT+QISTATE=<query_type>,<connectID>
+Response
++QISTATE: <connectID>,<service_type>,<IP_addres s>,<remote_port>,<local_port>,<socket_state>,<cont extID>,<serverID>,<access_mode>,<AT_port>
+
+OK
+Maximum Response Time
+/
+Characteristic
+/
+
+
+Parameter
+
+<query_type>	Integer type. The query type.
+0 Query connection status of all socket services in a specified context
+1 Query connection status of a specified socket service
+<contextID>	Integer type. The context ID. Range: 1-7.
+<connectID>	Integer type. The Socket ID. Range: 0-11.
+<service_type> String type. The socket service type.
+"TCP"	Start a TCP connection as a client
+"UDP"	Start a UDP connection as a client
+"TCP LISTENER"	 Start a TCP server to listen to TCP connection "TCP INCOMING"	 Start a TCP connection accepted by a TCP server "UDP SERVICE"	Start a UDP service
+"UDP INCOMING"	Start a UDP connection accepted by a UDP server
+<IP_address>	String type. IP address.
+If <service_type>="TCP" or "UDP", it is the IP address of remote server.
+If <service_type>="TCP LISTENER" or "UDP SERVICE", it is the local IP address. If <service_type>="TCP INCOMING" or "UDP INCOMING", it is the IP address of remote client.
+<remote_port>	Integer type. Remote port number.
+If <service_type>="TCP" or "UDP", it is the port of remote server.
+If <service_type>="TCP LISTENER" or "UDP SERVICE", the port is invalid.
+If <service_type>="TCP INCOMING" or "UDP INCOMING", it is the port of remote client.
+<local_port>	Integer type. Local port number.
+If <local_port>=0, then the local port is assigned automatically.
+
+
+
+<socket_state> Integer type. The socket service status.
+0 "Initial": connection has not been established
+1 "Opening": client is connecting or server is trying to listen
+2 "Connected": client/incoming connection has been established
+3 "Listening": server is listening
+4 "Closing": connection is closing
+<serverID>  Integer type. It is valid only when <service_type> is "TCP INCOMING". <serverID> represents which server accepts this TCP incoming connection, and the value is the same as <connectID> of this server's "TCP LISTENER".
+<access_mode> Integer type. Data access mode.
+0 Buffer access mode
+1 Direct push mode
+2 Transparent access mode
+<AT_port>	String type. COM port of socket service.
+"usbmodem"	USB modem port "usbat"	USB AT port
+"uart1"	UART port1
+"cmux1"	MUX port 1
+"cmux2"	MUX port 2
+"cmux3"	MUX port 3
+"cmux4"	MUX port 4
+
+
+2.4.10. AT+QISEND	Send Data
+
+If the data access mode of a specified socket service is buffer access mode (<access_mode>=0) or direct push mode (<access_mode>=1), then the data can be sent via AT+QISEND. When the data is sent to the module successfully, SEND OK will be returned. Otherwise, it will return SEND FAIL or ERROR. SEND FAIL indicates the sending buffer is full and resending of the data can be tried. ERROR indicates an error arises in the process of sending data. Resending of the data should be delayed for some time. The maximum length of data to be sent is 1460 bytes. SEND OK does not mean the data has been sent to the server successfully. You can query whether the data has reached the server by AT+QISEND=<connectID>,0.
+
+AT+QISEND	Send Data
+Test Command
+Response
+AT+QISEND=?
++QISEND: (range of supported <connectID>s),(range of
+
+supported <send_length>s)
+
+OK
+Write Command
+Response
+Send	variable-length	data	when
+>
+<service_type> is "TCP", "UDP" or
+After the response >, input the data to be sent. Tap Ctrl + Z to
+"TCP INCOMING", "UDP INCOMING"
+send data, and tap Esc to cancel the operation
+
+
+AT+QISEND=<connectID>
+
+(1) If <send_view_mode>=0:
+If the connection has been established and the data is sent successfully:
+SEND OK
+
+If the connection has been established but the sending buffer is full:
+SEND FAIL
+
+If the connection has not been established, abnormally closed, or any parameter is incorrect:
+ERROR
+
+(2) If <send_view_mode>=1:
+If the connection has been established and the data is sent successfully:
++QISEND: <connectID>,<status>,<Freesize> OK
+If the connection has not been established, abnormally closed, or any parameter is incorrect:
+ERROR
+Write Command
+Send	fixed-length	data	when
+<service_type> is "TCP", "UDP" or "TCP INCOMING", "UDP INCOMING"
+AT+QISEND=<connectID>,<send_len gth>
+Response
+>
+After the response >, input the data until the data length equals to <send_length>.
+
+(1) If <send_view_mode>=0:
+If the connection has been established and the data is sent successfully:
+SEND OK
+
+If the connection has been established but the sending buffer is full:
+SEND FAIL
+
+If the connection has not been established, abnormally closed, or any parameter is incorrect:
+ERROR
+
+(2) If <send_view_mode>=1:
+If the connection has been established:
+
+
+
++QISEND: <connectID>,<status>,<Freesize> OK
+If the connection has not been established, abnormally closed, or any parameter is incorrect:
+ERROR
+Write Command
+If <service_type> is "UDP SERVICE" AT+QISEND=<connectID>,<send_len gth>,<remoteIP>,<remote_port>
+Response
+This command sends fixed length data to a specified remote IP address and remote port. The <service_type> must be "UDP SERVICE".
+>
+After the response >, input the data until the data length equals to <send_length>
+
+If the connection has been established and the data is sent successfully:
+SEND OK
+
+If the connection has been established but the sending buffer is full:
+SEND FAIL
+
+If the connection has not been established, abnormally closed, or any parameter is incorrect:
+ERROR
+Write Command
+When <send_length> is 0, query the sent data AT+QISEND=<connectID>,0
+Response
+If the specified connection exists:
++QISEND: <total_send_length>,<ackedbytes>,<unacked bytes>
+
+OK
+
+If there is any error:
+ERROR
+Maximum Response Time
+/
+Characteristic
+/
+
+
+Parameter
+
+<connectID>	Integer type. Socket ID. Range: 0-11.
+
+
+
+
+<send_length>	Integer type. The length of data to be sent. Range: 0-1460. Unit: byte.
+<send_view_mode> Integer type. Enable or disable display AT+QISEND command execution information in URC form.
+0 Disable
+1 Enable
+<remoteIP>	String type. The remote IP address (must be dot decimal format). It is valid only when <service_type> is "UDP SERVICE".
+<remote_port>	Integer type. Remote port. It is only valid when <service_type> is "UDP SERVICE".
+<total_send_length> Integer type. The total length of sent data. Unit: byte.
+<ackedbytes>	Integer type. The total length of acknowledged data. Unit: byte.
+<unackedbytes>	Integer type. The total length of unacknowledged data. Unit: byte.
+<status>	Integer type.
+0 Send data to the socket buffer successfully
+1 The receiving buffer is full, send failed
+<Freesize>	Integer type. Free space in the current buffer. Range: 0-10240. Unit: byte.
+<err>	Error codes. Please refer to Chapter 1.
+
+
+2.4.11. AT+QIRD	Read the Received TCP/IP Data
+
+In buffer access mode, after receiving data, the module will buffer it and report +QIURC: "recv",<connectID>, and then the data can be read by AT+QIRD.
+
+Please note that if the buffer is not empty, and the module receives data again, it will not report a new URC until all the received data has been read via AT+QIRD from buffer.
+
+AT+QIRD	Read the Received TCP/IP Data
+Test Command
+Response
+AT+QIRD=?
++QIRD: (range of supported <connectID>s),(range of
+
+supported <read_length>s)
+
+OK
+Write Command
+When <service_type> is "TCP"/"UDP"/ "TCP INCOMING"/"UDP INCOMING"
+AT+QIRD=<connectID>[,<read_lengt
+h>]
+Response
+If the specified connection has received the data:
++QIRD: <read_actual_length>
+<data>
+
+OK
+
+If there is no data:
++QIRD: 0
+
+OK
+
+
+
+
+If the connection does not exist:
+ERROR
+Write Command
+When	<service_type>	is	"UDP SERVICE"
+AT+QIRD=<connectID>
+Response
+If data exists:
++QIRD: <read_actual_length>,<remoteIP>,<remote_por t>
+<data>
+
+OK
+
+If there is no data:
++QIRD: 0
+
+OK
+
+If the connection does not exist:
+ERROR
+Write Command
+When <read_length> is 0, query the retrieved data length AT+QIRD=<connectID>,0
+Response
+If the specified connection exists:
++QIRD: <total_receive_length>,<have_read_length>,<u nread_length>
+
+OK
+
+If there is any error:
+ERROR
+Maximum Response Time
+/
+Characteristic
+/
+
+
+Parameter
+
+<connectID>	Integer type. The Socket ID. Range: 0-11.
+<read_length>	The maximum length of data to be read. Range: 0-1500. Unit: byte.
+<read_actual_length>	Integer type. The length of data that has been actually read. Unit: byte.
+<remoteIP>		String type. The remote IP address. It is valid only when <service_type> is "UDP SERVICE".
+<remote_port>	Integer  type.  Remote  port.  Range:  1-65535.  It  is  valid  only  when
+<service_type> is "UDP SERVICE".
+<data>	Integer type. The data that has been read. Unit: byte.
+<total_receive_length>	Integer type. The total length of the received data. Unit: byte.
+<have_read_length>	Integer type. The length of data that has been read. Unit: byte.
+
+
+
+<unread_length>	Integer type. The length of data that has not been read. Unit: byte.
+
+
+
+2.4.12. AT+QISENDEX	Send Hex String Data
+
+This command sends hex string data and cannot be applied for "UDP SERVICE" and "TCP LISTENER" Socket service type.
+
+AT+QISENDEX	Send Hex String Data
+Test Command
+AT+QISENDEX=?
+Response
++QISENDEX: (range of supported <connectID>s),<hex_string>
+
+OK
+Write Command
+AT+QISENDEX=<connectID>,<
+hex_string>
+Response
+(1) If <send_view_mode>=0:
+If the hex string is sent successfully:
+SEND OK
+
+If the sending buffer is full:
+SEND FAIL
+
+If the connection does not exist:
+ERROR
+
+(2) If <send_view_mode>=1:
+If the connection has been established:
++QISENDEX: <connectID>,<status>,<Freesize> OK
+If the connection has not been established, abnormally closed, or any parameter is incorrect:
+ERROR
+Maximum Response Time
+/
+Characteristic
+/
+
+Parameter
+
+<connectID>	Integer type. The Socket ID. Range: 0-11.
+<hex_string>	String type. Hex string data. The max length is 512 bytes.
+<send_view_mode>	Integer type. Enable or disable display AT+QISEND command execution information in URC form.
+
+
+
+0 Disable
+1 Enable
+<status>	Integer type.
+0 Send data to the socket buffer successfully
+1 The receiving buffer is full, send failed
+<Freesize>	Integer type. Free space in the current buffer. Range: 0-10240. Unit: byte.
+
+
+2.4.13. AT+QISWTMD	Switch Data Access Mode
+
+This command switches the data access modes between buffer access mode, direct push mode and transparent access mode. When a socket service is established, the data access mode can be specified via the <access_mode> of AT+QIOPEN. After a socket has been opened, the data access mode can be changed via AT+QISWTMD.
+
+AT+QISWTMD	Switch Data Access Mode
+Test Command
+Response
+AT+QISWTMD=?
++QISWTMD: (range of supported <connectID>s),(range of
+
+supported <access_mode>s)
+
+OK
+Write Command
+AT+QISWTMD=<connectID>,<access
+_mode>
+Response
+If data access mode is switched successfully and <acces s_mode> is 0 or 1:
+OK
+
+If	data	access	mode	is	switched	successfully	and
+<access_mode> is 2, the module will enter into transparent access	mode:
+CONNECT
+
+If there is any error:
+ERROR
+Maximum Response Time
+/
+
+Characteristic
+The command takes effect immediately. The configuration will not be saved.
+
+
+Parameter
+
+<connectID>	Integer type. The Socket ID. Range: 0-11.
+<access_mode>	Integer type. The data access modes of the connection.
+0 Buffer access mode
+1 Direct push mode
+2 Transparent access mode
+
+
+2.4.14. AT+QPING	Ping a Remote Server
+
+This command tests the Internet protocol reachability of a host. Before using Ping tools, the host should activate the context corresponding to <contextID> via AT+QIACT first. It will return the result within
+<timeout> and the default value of <timeout> is 4 seconds.
+
+AT+QPING	Ping a Remote Server
+Test Command
+Response
+AT+QPING=?
++QPING: (range of supported <contextID>s),<host>,(range
+
+of supported <timeout>s),(range of supported <pingnum>s)
+
+OK
+Write Command AT+QPING=<contextID>,<host>[,<ti meout>[,<pingnum>]]
+Response
+If a remote server is pinged successfully:
+OK
+
++QPING: <result>,<IP_address>,<bytes>,<time>,<ttl>
+...
++QPING: <finresult>,<sent>,<rcvd>,<lost>,<min>,<max>,
+<avg>
+
+If there is any error:
+ERROR
+Maximum Response Time
+/
+Characteristic
+/
+
+
+Parameter
+
+<contextID>	Integer type. The context ID. Range: 1-7.
+<host>	String type. The host address in string type. The format is a domain name or a dotted decimal IP address.
+<timeout>	Integer type. Set the maximum time to wait for the response of each Ping request.
+Range: 1-255. Default value: 4. Unit: second.
+
+
+
+<pingnum>	Integer type. Set the maximum number of times for sending Ping request. Range: 1-10. Default value: 4.
+<result>	The result of each Ping request.
+0	Received the Ping response from the server. In this case, it is followed by ,<IP_address>,<bytes>,<time>,<ttl>.
+Others	Error codes. Please refer to Chapter 1.
+<IP_address>	String type. The IP address of the remote server formatted as a dotted decimal IP.
+<bytes>	Integer type. The length of each sent ping request. Unit: byte.
+<time>	Integer type. The time wait for the response of the ping request. Range: 1-255. Unit: ms.
+<ttl>	Integer type. Time to live value of the response packet for the ping request.
+Range: 1-255.
+<finresult>	Integer type. The final result of the command.
+0	It is finished normally. It is successful to activate the context and find the host. In this case, it is followed by ,<sent>,<rcvd>,<lost>,<min>,<max>,<avg>.
+Others	Error codes. Please refer to Chapter 1 for details.
+<sent>	Integer type. Total number of the Ping requests that have been sent.
+<rcvd>	Integer type. Total number of the Ping requests that are returned with the response.
+<lost>	Integer type. Total number of the Ping requests that time out.
+<min>	Integer type. The minimum response time. Unit: ms.
+<max>	Integer type. The maximum response time. Unit: ms.
+<avg>	Integer type. The average response time. Unit: ms.
+
+
+2.4.15. AT+QNTP	Synchronize Local Time with NTP Server
+
+This command synchronizes the local time with Universal Time Coordinated (UTC) through the NTP server. Before time synchronization, the host should activate the context corresponding to <contextID> via AT+QIACT first. Depending on the network, it will take at most 125 seconds to return the result.
+
+AT+QNTP	Synchronize Local Time with NTP Server
+Test command
+AT+QNTP=?
+Response
++QNTP: (range of supported <contextID>s),<server>,(range of supported <port>s),(list of supported <autosettime>s),(range of supported <retry_cnt>s),(range of supported <retry_interval_tm>s)
+
+OK
+Read command
+AT+QNTP?
+Response
+If in the process of local time synchronization:
++QNTP: <server>,<port>
+
+OK
+Write command
+AT+QNTP=<contextID>,<serv er>[,<port>[,<autosettime>[,<r
+Response
+If the local time is synchronized with NTP server successfully:
+OK
+
+
+etry_cnt>[,<retry_interval_t m>]]]]
+
++QNTP: <err>,<time>
+
+If there is any error:
+ERROR
+Maximum Response Time
+Affected  by  the  network  status  and  related  to  <retry_cnt>,
+<retry_interval_tm>, the maximum response time is 700 seconds.
+Characteristic
+The command takes effect immediately.
+The configuration will not be saved.
+
+
+Parameter
+
+<contextID>	Integer type. The context ID. Range: 1-7.
+<server>	String type. The address of NTP server.
+<port>	Integer type. The port of NTP server. Range: 1-65535. Default value: 123.
+<autosettime>	Integer type. Whether to automatically set synchronized time as local time.
+0 Not set
+1 Set
+<retry_cnt>	Integer type. The number of retries for request timeout. Range: 1-10.
+Default value: 3.
+<retry_interval_tm> Integer type. Request timeout period. Range: 5-60. Default value: 15. Unit: s.
+<err>	Error codes. Please refer to Chapter 1 for details.
+<time>	String type. The time synchronized from NTP server.
+The format is "YYYY/MM/DD,hh:mm:ss?zz". Range of zz: -48 - +56.
+
+
+2.4.16. AT+QIDNSCFG	Configure Address of DNS Server
+
+Before setting the DNS address, the host must activate the context corresponding to <contextID> via
+AT+QIACT first.
+
+AT+QIDNSCFG	Configure Address of DNS Server
+Test command
+AT+QIDNSCFG=?
+Response
++QIDNSCFG: (range of supported <contextID>s),<pridnsadd r>,<secdnsaddr>
+
+OK
+Write Command AT+QIDNSCFG=<contextID>[,<pr idnsaddr>[,<secdnsaddr>]]
+Response
+If the optional parameters are omitted, query the current DNS server addresses of a specified PDP context:
++QIDNSCFG: <contextID>,<pridnsaddr>,<secdnsaddr>
+
+OK
+
+
+
+If any of the optional parameters is specified, set the primary and secondary DNS server addresses of a specified PDP context:
+OK
+
+If there is any error:
+ERROR
+Maximum Response Time
+/
+Characteristic
+The command takes effect immediately.
+The configuration will not be saved.
+
+
+Parameter
+
+<contextID>	Integer type. The PDP context ID. Range: 1-7.
+<pridnsaddr>	String type. The primary DNS server address.
+<secdnsaddr>	String type. The secondary DNS server address.
+
+
+2.4.17. AT+QIDNSGIP	Get IP Address by Domain Name
+
+Before querying the DNS, the host should activate the context corresponding to <contextID> via
+AT+QIACT first. Depending on the network, it will take at most 60 seconds to return the result.
+
+.AT+QIDNSGIP	Get IP Address by Domain Name
+Test Command
+AT+QIDNSGIP=?
+Response
++QIDNSGIP: (range of supported <contextID>s),<hostname>
+
+OK
+Write Command AT+QIDNSGIP=<contextID>,<ho stname>
+Response
+OK
+
+If there is any error:
+ERROR
+
+The result will be returned as URC.
++QIURC: "dnsgip",<err>,<IP_count>,<DNS_ttl> [...
++QIURC: "dnsgip",<hostIPaddr>]
+Maximum Response Time
+60 seconds, depending on the network.
+Characteristic
+/
+
+
+Parameter
+
+<contextID>	Integer type. The PDP context ID. Range: 1-7.
+<hostname>	String type. The domain name.
+<err>	Error codes. Please refer to Chapter 1.
+<IP_count>	Integer type. The number of the IP addresses corresponding to the <hostname>.
+<DNS_ttl>	Integer type. The time-to-Live of the DNS.
+<hostIPaddr>	String type. The IP address of <hostname>.
+
+
+2.4.18. AT+QISDE	Control Whether to Echo the Data for AT+QISEND
+
+This command controls whether to echo the data to be sent by AT+QISEND, that is, whether to echo the input data to be sent.
+
+AT+QISDE	Control Whether to Echo the Data for AT+QISEND
+Test command
+AT+QISDE=?
+Response
++QISDE: (list of supported <echo>s)
+
+OK
+Read command
+AT+QISDE?
+Response
++QISDE: <echo>
+
+OK
+Write Command
+AT+QISDE=<echo>
+Response
+OK
+
+If there is any error:
+ERROR
+Maximum Response Time
+/
+
+Characteristic
+The command takes effect immediately. The configuration will not be saved.
+
+Parameter
+
+<echo>	Numeric type. Whether to echo the data to be sent for AT+QISEND.
+0 Not echo the data
+1 Echo the data
+
+
+2.4.19. AT+QIGETERROR	Query the Error Code of the Last AT Command
+
+If ERROR is returned after TCP/IP commands are executed, the details of error can be queried via AT+QIGETERROR. Please note that AT+QIGETERROR only returns error codes of the last TCP/IP AT command.
+
+AT+QIGETERROR	Query the Error Code of the Last AT Command
+Test command
+AT+QIGETERROR=?
+Response
+OK
+Execution Command
+AT+QIGETERROR
+Response
++QIGETERROR: <err>,<errcode_description>
+
+OK
+Maximum Response Time
+/
+Characteristic
+/
+
+Parameter
+
+<err>	Error codes. Please refer to Chapter 1.
+<errcode_description>	String type. The details of error information. Please refer to Chapter 1.
+
+
+
+2.5. Description of URCs
+
++QIURC: is used at the beginning of the URC of TCP/IP AT commands to be reported to the host. The URC contains the reports about incoming data, connection closure and incoming connection and so on. Actually, <CR><LF> occurs at both the beginning and end of URC, but <CR><LF> is not presented intentionally.
+
+
+2.5.1.	+QIURC: "closed"	URC Indicating Connection Closed
+
+When TCP socket service is closed by remote peer or due to network error, the URC will be outputted, and the status of socket service will be "closing" (<socket_state>=4). AT+QICLOSE=<connectID> can be used to change the <socket_state> to initial.
+
++QIURC: "closed"	URC Indicating Connection Closed
++QIURC: "closed",<connectID>
+Socket service connection is closed.
+
+
+Parameter
+
+<connectID>	Integer type. The Socket ID. Range: 0-11.
+
+
+
+2.5.2.  +QIURC: "recv"  URC Indicating Incoming Data
+
+In buffer access mode or direct push mode, after receiving data, the module will report a URC to the host.
+
+* In buffer access mode, after receiving data, the module will report URC as +QIURC: "recv",<connectID> to notify the host. Then host can retrieve data via AT+QIRD. Please note that if the buffer is not empty, and the module receives data again, it will not report a new URC until all the received data has been retrieved via AT+QIRD from buffer.
+* In direct push mode, the received data will be outputted to COM port directly.
+
++QIURC: "recv"	URC Indicating Incoming Data
++QIURC: "recv",<connectID>
+The URC indicates the incoming data in buffer access mode. The host can receive data via AT+QIRD.
++QIURC: "recv",<connectID>,<curre ntrecvlength><CR><LF><data>
+The URC indicates the incoming data in direct push mode when the <service_type> is "TCP", "UDP", "UPD INCOMING" or "TCP INCOMING".
++QIURC: "recv",<connectID>,<curre ntrecvlength>,<remoteIP>,<remote_ port><CR><LF><data>
+The URC indicates data incoming in direct push mode when
+<service_type> is "UDP SERVICE".
+
+Parameter
+
+<connectID>	Integer type. The Socket ID. Range: 0-11.
+<currentrecvlength>	Integer type. The length of actually received data. Range: 1-1500. Unit: byte.
+<remoteIP>	String type. Remote IP address.
+<remote_port>	Integer type. Remote port. Range: 1-65535.
+<data>	Integer type. The data that has been read.
+
+
+2.5.3.	+QIURC: "incoming full"	URC Indicating Incoming Connection Full
+
+If the incoming connection reaches the limit, or no socket system resources can be allocated, then the module will report the URC as +QIURC: "incoming full" for the new incoming connection request.
+
++QIURC: "incoming full"	URC Indicating Incoming Connection Full
++QIURC: "incoming full"
+The URC indicates the incoming connection is full.
+
+
+2.5.4.	+QIURC: "incoming"	URC Indicating Incoming Connection
+
+If the <service_type> is "TCP LISTENER", when a remote client connects to this server, the host will automatically assign a free <connectID> for the new connection. The range of <connectID> is 0-11. In such a case, the module will report the URC. The <service_type> of the new connection will be "TCP INCOMING", and the <access_mode> will be buffer access mode.
+
++QIURC: "incoming"	URC Indicating Incoming Connection
++QIURC: "incoming",<connectID>,<s
+When  the  new  incoming  connection  is  accepted  by
+erverID>,<remoteIP>,<remote_port>
+<serverID>, the allocated <connectID>, <remoteIP> and
+
+<remote_port> will be informed by this URC.
+
+Parameter
+
+<connectID>	Integer type. Assign this socket service for the incoming connection, which is automatically specified by the module. Range: 0-11.
+<serverID>	Integer	type.	The	incoming	<connectID>	accepted	by	the	server	whose
+<service_type> is "TCP LISTENER" and listening socket ID is <serverID>.
+<remoteIP>	String type. Remote IP address of the incoming <connectID>.
+<remote_port>	Integer type. Remote port of the incoming <connectID>. Range: 1-65535.
+
+
+2.5.5.	+QIURC: "pdpdeact"	URC Indicating PDP Deactivation
+
+PDP context may be deactivated by the network. The module will report the URC to the host about PDP deactivation. In such a case, the host must execute AT+QIDEACT to deactivate the context and reset all connections.
+
++QIURC: "pdpdeact"	URC Indicating PDP Deactivation
++QIURC: "pdpdeact",<contextID>
+<contextID> context is deactivated.
+
+Parameter
+
+<contextID>	Integer type. The context ID. Range: 1-7.
+
+
+
+
+
+
+
+3 Examples
+3.1. Configure and Activate a Context
+
+3.1.1. Configure a Context
+
+
+
+3.1.2. Activate a Context
+
+
+
+3.1.3. Deactivate a Context
+
+
+
+
+3.1.4. Set up Asynchronous/Synchronous Activation or Deactivation Operation
+
+
+
+OK
+AT+QICFG="pdp/retry",1,0	//Query the number and time of activation in 4G mode.
++QICFG: "pdp/retry",1,0,4,8
+
+OK
+AT+QICFG="pdp/retry",1,1	//Query the number and time of activation in 2G mode.
++QICFG: "pdp/retry",1,1,4,10
+
+OK
+AT+QICFG="pdp/retry",0,0,2,6	//Configure deactivation retry time is 2, every single time 6
+seconds, total time 18 seconds in 4G mode.
+OK
+AT+QICFG="pdp/retry",0,1,2,6	//Configure deactivation retry time is 2, every single time 6
+seconds, total time 18 seconds in 2G mode.
+OK
+AT+QICFG="pdp/retry",1,0,4,6	//Configure deactivation retry time is 4, every single time 6
+seconds, total time 30 seconds in 4G mode.
+OK
+AT+QICFG="pdp/retry",1,1,4,6	//Configure deactivation retry time is 4, every single time 6
+seconds, total time 30 seconds in 2G mode.
+OK
+AT+QICSGP=1,1,"CMNET"	//Configure context 1 IP type is IPv4, APN is CMNET.
+OK
+AT+QIACT=1	//Execute synchronous context activation instruction.
+OK
+AT+QIACT?	//Query context activation status.
++QIACT: 1,1,1,"10.171.134.243"
+
+OK
+AT+QIDEACT=1	//Execute synchronous deactivation context command.
+OK
+AT+QIACTEX=1	//Execute asynchronous context activation instruction.
+OK
+
++QIACTEX: 1,0
+AT+QIACTEX?	//Query context activation status.
++QIACTEX: 1,1,1,"10.183.232.187"
+
+OK
+AT+QIDEACTEX=1	// Execute asynchronous context activation command.
+OK
+
++QIDEACTEX: 1,0
+AT+QIACTEX=1,1	//Execute asynchronous context activation instructions and
+
+
+
+
+
+
+3.2. TCP Client Works in Buffer Access Mode
+
+3.2.1. Set up a TCP Client Connection and Enter into Buffer Access Mode
+
+
+
+3.2.2. Send Data in Buffer Access Mode
+
+
+
+3.2.3. Receive Data from Remote Server in Buffer Access Mode
+
+
+
+3.2.4. Close a Connection
+
+
+
+
+
+3.3. TCP Client Works in Transparent Access Mode
+
+3.3.1. Set up a TCP Client Connection and Enter into Transparent Access Mode
+
+
+
+
+3.3.2. Send Data in Transparent Access Mode
+
+
+
+
+3.3.3. Receive Data from Remote Server in Transparent Access Mode
+
+
+
+
+3.3.4. Close a TCP Client
+
+
+
+
+3.4. TCP Client Works in Direct Push Mode
+
+3.4.1. Set up a TCP Client Connection and Enter into Direct Push Mode
+
+
+
+
+3.4.2. Send Data in Direct Push Mode
+
+
+
+
+3.4.3. Receive Data from Remote Server in Direct Push Mode
+
+
+
+
+3.4.4. Close a TCP Client
+
+
+
+
+
+3.5. TCP Server Works in Buffer Access Mode
+
+3.5.1. Start a TCP Server
+
+
+
+
+3.5.2. Accept TCP Incoming Connection
+
+
+
+
+3.5.3. Receive Data from Incoming Connection
+
+
+
+
+
+
+
+3.5.4. Close a TCP Server
+
+
+
+
+
+3.6. Example of UDP Service
+
+3.6.1. Start a UDP Service
+
+
+
+
+3.6.2. Send UDP Data to Server
+
+
+
+
+3.6.3. Receive Data from Remote
+
+
+
+3.6.4. Close a UDP Service
+
+
+
+
+
+3.7. PING
+
+
+
+
+
+
+
+
+
+3.8. Synchronize Local Time
+
+
+
+
+
+3.9. Get Last Error Code
+
+
+
+
+
+
+
+
+
+4 Summary of Error Codes
+If ERROR is returned after TCP/IP AT commands are executed, the details of ERROR can be queried via AT+QIGETERROR. Please note that AT+QIGETERROR just returns error codes of the last TCP/IP AT command.
+
+
+Table 2: Summary of Error Codes
+
+0	Operation success
+
+550	Unknown error
+
+551	Operation blocked
+
+552	Invalid parameters
+
+553	Memory not enough
+
+554	Socket creation failed
+
+555	Operation not supported
+
+556	Socket bind failed
+
+557	Socket listen failed
+
+558	Socket write failed
+
+559	Socket read failed
+
+560	Socket accept failed
+
+561	PDP Context opening failed
+
+562	PDP context closure failed
+
+563	Socket identity has been used
+
+564	DNS busy
+
+
+
+
+565	DNS parse failed
+
+566	Socket connect failed
+
+567	Socket has been closed
+
+568	Operation busy
+
+569	Operation timeout
+
+570	PDP context broken down
+
+571	Cancel sending
+
+572	Operation not allowed
+
+573	APN not configured
+
+574	Port busy
+
+
+
+
+
+
+
+5 Appendix Reference
+Table 3: Related Document
+
+[1]  Quectel_EC200U&EG915U_Series_AT_Commands_Manual
+

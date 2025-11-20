@@ -246,6 +246,33 @@ class QuectelEC200U_Adv {
     String getModelIdentification();
     String getFirmwareRevision();
 
+    // General Commands
+    bool restoreFactoryDefaults();
+    String showCurrentConfiguration();
+    bool storeConfiguration(int profile = 0);
+    bool restoreConfiguration(int profile = 0);
+    bool setResultCodeEcho(bool enable);
+    bool setResultCodeFormat(bool verbose);
+    bool setCommandEcho(bool enable);
+    bool repeatPreviousCommand();
+    bool setSParameter(int s, int value);
+    bool setFunctionMode(int fun, int rst = 0);
+    bool setErrorMessageFormat(int format);
+    bool setTECharacterSet(const String &chset);
+    bool setURCOutputRouting(const String &port);
+
+    // UART Control Commands
+    bool setDCDFunctionMode(int mode);
+    bool setDTRFunctionMode(int mode);
+    bool setUARTFlowControl(int dce_by_dte, int dte_by_dce);
+    bool setUARTFrameFormat(int format, int parity);
+    bool setUARTBaudRate(long rate);
+
+    // Status Control and Extended Settings
+    String getActivityStatus();
+    bool setURCIndication(const String &urc_type, bool enable);
+
+
     // Advanced Error Reporting and SIM
     String getExtendedErrorReports();
     String getSIMStatus();

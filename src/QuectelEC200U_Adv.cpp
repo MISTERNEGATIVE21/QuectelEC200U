@@ -1505,6 +1505,92 @@ String QuectelEC200U_Adv::getFirmwareRevision() {
     return readResponse(1000);
 }
 
+// ===== General Commands =====
+bool QuectelEC200U_Adv::restoreFactoryDefaults() {
+    logDebug(F("Performing factory reset..."));
+    bool result = sendAT(F("AT&F"), F("OK"), 5000);
+    if (result) {
+        _initialized = false;
+        _echoDisabled = false;
+        _simChecked = false;
+        _networkRegistered = false;
+        _state = MODEM_UNINITIALIZED;
+    }
+    return result;
+}
+
+String QuectelEC200U_Adv::showCurrentConfiguration() {
+    _serial->println(F("AT&V"));
+    return readResponse(2000);
+}
+
+bool QuectelEC200U_Adv::storeConfiguration(int profile) {
+    return sendAT("AT&W" + String(profile));
+}
+
+bool QuectelEC200U_Adv::restoreConfiguration(int profile) {
+    return sendAT("ATZ" + String(profile));
+}
+
+bool QuectelEC200U_Adv::setResultCodeEcho(bool enable) {
+    return sendAT(String("ATQ") + (enable ? "0" : "1"));
+}
+
+bool QuectelEC200U_Adv::setResultCodeFormat(bool verbose) {
+    return sendAT(String("ATV") + (verbose ? "1" : "0"));
+}
+
+bool QuectelEC200U_Adv::setCommandEcho(bool enable) {
+    return sendAT(String("ATE") + (enable ? "1" : "0"));
+}
+
+bool QuectelEC200U_Adv::repeatPreviousCommand() {
+    _serial->println(F("A/"));
+    return expectURC(F("OK"), 3000);
+}
+
+bool QuectelEC200U_Adv::setSParameter(int s, int value) {
+    return sendAT("ATS" + String(s) + "=" + String(value));
+}
+
+bool QuectelEC200U_Adv::setFunctionMode(int fun, int rst) {
+    return sendAT("AT+CFUN=" + String(fun) + "," + String(rst));
+}
+
+bool QuectelEC200U_Adv::setErrorMessageFormat(int format) {
+    return sendAT("AT+CMEE=" + String(format));
+}
+
+bool QuectelEC200U_Adv::setTECharacterSet(const String &chset) {
+    return sendAT("AT+CSCS=\"" + chset + "\"");
+}
+
+bool QuectelEC200U_Adv::setURCOutputRouting(const String &port) {
+    return sendAT("AT+QURCCFG=\"urcport\",\"" + port + "\"");
+}
+
+// ===== UART Control Commands =====
+bool QuectelEC200U_Adv::setDCDFunctionMode(int mode) {
+    return sendAT(String("AT&C") + mode);
+}
+
+bool QuectelEC200U_Adv::setDTRFunctionMode(int mode) {
+    return sendAT(String("AT&D") + mode);
+}
+
+bool QuectelEC200U_Adv::setUARTFlowControl(int dce_by_dte, int dte_by_dce) {
+    return sendAT("AT+IFC=" + String(dce_by_dte) + "," + String(dte_by_dce));
+}
+
+bool QuectelEC200U_Adv::setUARTFrameFormat(int format, int parity) {
+    return sendAT("AT+ICF=" + String(format) + "," + String(parity));
+}
+
+bool QuectelEC200U_Adv::setUARTBaudRate(long rate) {
+    return sendAT("AT+IPR=" + String(rate));
+}
+
+
 // ===== Advanced Error Reporting and SIM =====
 String QuectelEC200U_Adv::getExtendedErrorReports() {
     _serial->println(F("AT+CEER"));
