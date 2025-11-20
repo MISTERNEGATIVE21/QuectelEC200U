@@ -9,8 +9,8 @@
   This library is an independent, unofficial project and is not affiliated with or endorsed by Quectel.
 */
 
-#ifndef QUECTEL_EC200U_H
-#define QUECTEL_EC200U_H
+#ifndef QUECTEL_EC200U_ADV_H
+#define QUECTEL_EC200U_ADV_H
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
@@ -58,7 +58,7 @@ enum class ErrorCode {
   FS_ERROR = -70,
 };
 
-class QuectelEC200U {
+class QuectelEC200U_Adv {
   public:
     // HardwareSerial constructor (auto-configure on begin). On ESP32, optional RX/TX pins are supported.
     QuectelEC200U(HardwareSerial &serial, uint32_t baud = 115200, int8_t rxPin = -1, int8_t txPin = -1);
@@ -172,16 +172,6 @@ class QuectelEC200U {
     // PSM
     bool enablePSM(bool enable);
     
-    // Audio
-    bool setSpeakerVolume(int level);
-    bool setRingerVolume(int level);
-    bool setMicMute(bool mute);
-    bool setMicGain(int channel, int level);
-    bool setSidetone(bool enable, int level);
-    bool setAudioChannel(int channel);
-    bool setAudioInterface(const String &params);
-    bool audioLoopback(bool enable);
-    
     // Command history (Ctrl+Z support)
     void addToHistory(const String &cmd);
     String getFromHistory(int index);
@@ -199,6 +189,74 @@ class QuectelEC200U {
     int extractInteger(const char* response, const String &tag);
     bool waitForResponse(const String &expect, uint32_t timeout);
     bool parseJson(const String &jsonString, JsonDocument &doc);
+    
+    // Ping
+    bool ping(const String &host, int contextID = 1, int timeout = 4, int pingnum = 4);
+    
+    // NTP
+    bool ntpSync(const String &server, int contextID = 1, int port = 123);
+
+    // DNS
+    bool setDNS(const String &primary, const String &secondary, int contextID = 1);
+    String getIpByHostName(const String &hostname, int contextID = 1);
+
+    // ADC
+    int readADC();
+
+    // Struct to hold PDP Context information
+    struct PDPContext {
+        int cid;
+        String pdp_type;
+        String apn;
+        String p_addr;
+        String dns_p;
+        String dns_s;
+        // Add other fields as necessary from the full AT+CGDCONT response
+    };
+
+    // Packet Domain
+    String getPacketDataCounter();
+    String readDynamicPDNParameters(int cid = 1);
+    PDPContext getPDPContext(int cid = 1);
+
+    // Audio
+    bool setSpeakerVolume(int level);
+    bool setRingerVolume(int level);
+    bool setMicMute(bool mute);
+    bool setMicGain(int channel, int level);
+    bool setSidetone(bool enable, int level);
+    bool setAudioChannel(int channel);
+    bool setAudioInterface(const String &params);
+    bool audioLoopback(bool enable);
+
+    // Hardware
+    String getBatteryCharge();
+    String getWifiScan();
+    
+    // Advanced TCP/IP
+    bool switchDataAccessMode(int connectID, int accessMode);
+    bool echoSendData(bool enable);
+
+    // QCFG - Extended settings
+    bool setNetworkScanMode(int mode);
+    bool setBand(const String &gsm_mask, const String &lte_mask);
+
+    // Modem Identification
+    String getManufacturerIdentification();
+    String getModelIdentification();
+    String getFirmwareRevision();
+
+    // Advanced Error Reporting and SIM
+    String getExtendedErrorReports();
+    String getSIMStatus();
+
+
+    
+    
+    
+    
+    
+    
     
   private:
     Stream *_serial;
