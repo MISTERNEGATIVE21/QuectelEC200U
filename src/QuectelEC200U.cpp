@@ -1599,6 +1599,42 @@ String QuectelEC200U::getNetworkInfo() {
     return readResponse(1000);
 }
 
+// ===== Advanced TCP/IP Configuration =====
+bool QuectelEC200U::setTCPConfig(const String &param, const String &value) {
+    return sendAT("AT+QICFG=\"" + param + "\"," + value);
+}
+
+String QuectelEC200U::getSocketStatus(int connectID) {
+    _serial->println("AT+QISTATE=" + String(connectID));
+    return readResponse(1000);
+}
+
+int QuectelEC200U::getTCPError() {
+    _serial->println(F("AT+QIGETERROR"));
+    String resp = readResponse(1000);
+    return _parseCsvInt(resp, F("+QIGETERROR: "), 0);
+}
+
+// ===== Asynchronous PDP Context =====
+bool QuectelEC200U::activatePDPAsync(int ctxId) {
+    return sendAT("AT+QIACTEX=" + String(ctxId) + ",1", F("OK"), 1000);
+}
+
+bool QuectelEC200U::deactivatePDPAsync(int ctxId) {
+    return sendAT("AT+QIDEACTEX=" + String(ctxId) + ",1", F("OK"), 1000);
+}
+
+// ===== Context Configuration =====
+bool QuectelEC200U::configureContext(int ctxId, int type, const String &apn, const String &user, const String &pass, int auth) {
+    String cmd = "AT+QICSGP=" + String(ctxId) + "," + String(type) + ",\"" + apn + "\",\"" + user + "\",\"" + pass + "\"," + String(auth);
+    return sendAT(cmd);
+}
+
+// ===== General Modem Configuration =====
+bool QuectelEC200U::setModemConfig(const String &param, const String &value) {
+    return sendAT("AT+QCFG=\"" + param + "\"," + value);
+}
+
 // ===== Call-Related Commands =====
 bool QuectelEC200U::setVoiceHangupControl(int mode) {
     return sendAT("AT+CVHU=" + String(mode));

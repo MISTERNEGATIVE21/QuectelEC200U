@@ -324,6 +324,21 @@ class QuectelEC200U {
     String getExtendedErrorReports();
     String getSIMStatus();
 
+    // Advanced TCP/IP Configuration
+    bool setTCPConfig(const String &param, const String &value);
+    String getSocketStatus(int connectID);
+    int getTCPError();
+
+    // Asynchronous PDP Context
+    bool activatePDPAsync(int ctxId = 1);
+    bool deactivatePDPAsync(int ctxId = 1);
+    
+    // Context Configuration
+    bool configureContext(int ctxId, int type, const String &apn, const String &user, const String &pass, int auth);
+
+    // General Modem Configuration
+    bool setModemConfig(const String &param, const String &value);
+
 
     
     
