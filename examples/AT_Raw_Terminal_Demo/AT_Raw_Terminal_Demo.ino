@@ -1,3 +1,10 @@
+
+#if defined(ARDUINO_ARCH_ESP32)
+  HardwareSerial& SerialAT = Serial1;
+#else
+  #include <SoftwareSerial.h>
+  SoftwareSerial SerialAT(10, 11);
+#endif
 /*
   EC200U AT Raw Terminal Demo
 
@@ -56,8 +63,6 @@ void EC200U_powerOn() {
 #endif
 
 #if !defined(ARDUINO_ARCH_ESP32)
-#include <SoftwareSerial.h>
-SoftwareSerial SerialAT(EC200U_RX_PIN, EC200U_TX_PIN);
 #endif
 
 void setup() {

@@ -136,8 +136,6 @@ class QuectelEC200U {
     // USSD
     bool sendUSSD(const String &code, String &response);
     
-    // NTP / Clock
-    bool ntpSync(const String &server = "pool.ntp.org", int timezone = 0);
     String getClock();
     bool setClock(const String &datetime);
     
@@ -172,16 +170,6 @@ class QuectelEC200U {
     // PSM
     bool enablePSM(bool enable);
     
-    // Audio
-    bool setSpeakerVolume(int level);
-    bool setRingerVolume(int level);
-    bool setMicMute(bool mute);
-    bool setMicGain(int channel, int level);
-    bool setSidetone(bool enable, int level);
-    bool setAudioChannel(int channel);
-    bool setAudioInterface(const String &params);
-    bool audioLoopback(bool enable);
-    
     // Command history (Ctrl+Z support)
     void addToHistory(const String &cmd);
     String getFromHistory(int index);
@@ -191,14 +179,158 @@ class QuectelEC200U {
     void clearHistory();
     
     // Power management
-    bool powerOff();
+    void powerOn(int pin);
     bool reboot();
+    bool powerOff();
     
     // Utility functions
     String extractQuotedString(const char* response, const String &tag);
     int extractInteger(const char* response, const String &tag);
     bool waitForResponse(const String &expect, uint32_t timeout);
     bool parseJson(const String &jsonString, JsonDocument &doc);
+    
+    // Ping
+    bool ping(const String &host, int contextID = 1, int timeout = 4, int pingnum = 4);
+    
+    // NTP
+    bool ntpSync(const String &server, int timezone, int contextID = 1, int port = 123);
+
+    // DNS
+    bool setDNS(const String &primary, const String &secondary, int contextID = 1);
+    String getIpByHostName(const String &hostname, int contextID = 1);
+
+    // ADC
+    int readADC();
+
+    // Struct to hold PDP Context information
+    struct PDPContext {
+        int cid;
+        String pdp_type;
+        String apn;
+        String p_addr;
+        String dns_p;
+        String dns_s;
+        // Add other fields as necessary from the full AT+CGDCONT response
+    };
+
+    // Packet Domain
+    String getPacketDataCounter();
+    String readDynamicPDNParameters(int cid = 1);
+    PDPContext getPDPContext(int cid = 1);
+
+    // Audio
+    bool setSpeakerVolume(int level);
+    bool setRingerVolume(int level);
+    bool setMicMute(bool mute);
+    bool setMicGain(int channel, int level);
+    bool setSidetone(bool enable, int level);
+    bool setAudioChannel(int channel);
+    bool setAudioInterface(const String &params);
+    bool audioLoopback(bool enable);
+
+    // Hardware
+    String getBatteryCharge();
+    String getWifiScan();
+    
+    // Advanced TCP/IP
+    bool switchDataAccessMode(int connectID, int accessMode);
+    bool echoSendData(bool enable);
+
+    // QCFG - Extended settings
+    bool setNetworkScanMode(int mode);
+    bool setBand(const String &gsm_mask, const String &lte_mask);
+
+    // Modem Identification
+    String getManufacturerIdentification();
+    String getModelIdentification();
+    String getFirmwareRevision();
+
+    // General Commands
+    bool restoreFactoryDefaults();
+    String showCurrentConfiguration();
+    bool storeConfiguration(int profile = 0);
+    bool restoreConfiguration(int profile = 0);
+    bool setResultCodeEcho(bool enable);
+    bool setResultCodeFormat(bool verbose);
+    bool setCommandEcho(bool enable);
+    bool repeatPreviousCommand();
+    bool setSParameter(int s, int value);
+    bool setFunctionMode(int fun, int rst = 0);
+    bool setErrorMessageFormat(int format);
+    bool setTECharacterSet(const String &chset);
+    bool setURCOutputRouting(const String &port);
+
+    // UART Control Commands
+    bool setDCDFunctionMode(int mode);
+    bool setDTRFunctionMode(int mode);
+    bool setUARTFlowControl(int dce_by_dte, int dte_by_dce);
+    bool setUARTFrameFormat(int format, int parity);
+    bool setUARTBaudRate(long rate);
+
+    // Status Control and Extended Settings
+    String getActivityStatus();
+    bool setURCIndication(const String &urc_type, bool enable);
+
+    // (U)SIM Related Commands
+    String getIMSI();
+    String getICCID();
+    String getPinRetries();
+
+    // Network Service Commands
+    String getDetailedSignalQuality();
+    String getNetworkTime();
+    String getNetworkInfo();
+
+    // Call-Related Commands
+    bool setVoiceHangupControl(int mode);
+    bool hangupVoiceCall();
+    bool setConnectionTimeout(int seconds);
+
+    // Phonebook Commands
+    String getSubscriberNumber();
+    String findPhonebookEntries(const String &findtext);
+    String readPhonebookEntry(int index1, int index2 = -1);
+    bool selectPhonebookStorage(const String &storage);
+    bool writePhonebookEntry(int index, const String &number, const String &text, int type = 129);
+
+    // SMS Commands
+    bool setMessageFormat(int mode);
+    bool setServiceCenterAddress(const String &sca);
+    String listMessages(const String &stat);
+    bool setNewMessageIndication(int mode, int mt, int bm, int ds, int bfr);
+
+    // Packet Domain Commands
+    bool gprsAttach(bool attach);
+    bool setGPRSClass(const String &gprs_class);
+    bool setPacketDomainEventReporting(int mode);
+
+    // Supplementary Service Commands
+    bool setCallForwarding(int reason, int mode, const String &number, int time = 20);
+    bool setCallWaiting(int mode);
+    bool setCallingLineIdentificationPresentation(bool enable);
+    bool setCallingLineIdentificationRestriction(int mode);
+
+    // More Audio Commands
+    bool recordAudio(const String &filename);
+    bool playAudio(const String &filename);
+    bool stopAudio();
+    bool playTextToSpeech(const String &text);
+
+    // Remaining TCP/IP Commands
+    bool sendHexData(int connectID, const String &hex_string);
+
+
+    // Advanced Error Reporting and SIM
+    String getExtendedErrorReports();
+    String getSIMStatus();
+
+
+    
+    
+    
+    
+    
+    
     
   private:
     Stream *_serial;

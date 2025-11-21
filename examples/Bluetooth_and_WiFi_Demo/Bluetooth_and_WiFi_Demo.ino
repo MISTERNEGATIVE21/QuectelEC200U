@@ -12,7 +12,14 @@
 
 #if defined(ARDUINO_ARCH_ESP32)
 #include <WiFi.h>
-HardwareSerial& SerialAT = Serial2;
+
+
+#if defined(ARDUINO_ARCH_ESP32)
+  HardwareSerial& SerialAT = Serial1;
+#else
+  #include <SoftwareSerial.h>
+  SoftwareSerial SerialAT(10, 11);
+#endif
 QuectelEC200U modem(SerialAT, 115200, EC200U_RX_PIN, EC200U_TX_PIN);
 
 void EC200U_powerOn() {

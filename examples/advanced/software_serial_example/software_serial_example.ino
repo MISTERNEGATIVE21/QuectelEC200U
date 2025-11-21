@@ -1,8 +1,8 @@
 /*
-  SoftwareSerial example for QuectelEC200U_Adv library
+  SoftwareSerial example for QuectelEC200U library
 */
 
-#include <QuectelEC200U_Adv.h>
+#include <QuectelEC200U.h>
 
 #if defined(ARDUINO_ARCH_ESP32)
 // For ESP32, we use HardwareSerial
@@ -13,10 +13,24 @@ const int MODEM_PWR_PIN = 12; // Power pin for the modem
 
 // Use a HardwareSerial port. On some ESP32 boards, this might be Serial2.
 // The ESP32 core suggests Serial1 might be available. Check your board's pinout.
-HardwareSerial& modemSerial = Serial1;
 
-// Create a QuectelEC200U_Adv instance for ESP32
-QuectelEC200U_Adv modem(modemSerial, 115200, MODEM_RX_PIN, MODEM_TX_PIN);
+
+// Create a QuectelEC200U instance for ESP32
+
+#if defined(ARDUINO_ARCH_ESP32)
+  
+#else
+  #include <SoftwareSerial.h>
+  SoftwareSerial modemSerial(10, 11);
+#endif
+
+#if defined(ARDUINO_ARCH_ESP32)
+  HardwareSerial& modemSerial = Serial1;
+#else
+  #include <SoftwareSerial.h>
+  SoftwareSerial modemSerial(10, 11);
+#endif
+QuectelEC200U modem(modemSerial, 115200, MODEM_RX_PIN, MODEM_TX_PIN);
 
 #else
 // For other Arduino boards, we use SoftwareSerial
@@ -30,8 +44,8 @@ const int MODEM_PWR_PIN = 12; // Power pin for the modem
 // Create a SoftwareSerial instance
 SoftwareSerial modemSerial(MODEM_RX_PIN, MODEM_TX_PIN);
 
-// Create a QuectelEC200U_Adv instance
-QuectelEC200U_Adv modem(modemSerial);
+// Create a QuectelEC200U instance
+QuectelEC200U modem(modemSerial);
 #endif
 
 void powerOnModem() {

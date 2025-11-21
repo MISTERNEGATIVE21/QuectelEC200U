@@ -9,7 +9,7 @@
 
 // For ESP32, you can use HardwareSerial
 #if defined(ARDUINO_ARCH_ESP32)
-HardwareSerial& SerialAT = Serial1; // Use Serial1, Serial2, etc. as available
+ // Use Serial1, Serial2, etc. as available
 #else
 // For other boards, you might need SoftwareSerial
 #include <SoftwareSerial.h>
@@ -25,7 +25,14 @@ const char* BSNL_APN = "bsnlnet";
 void setup() {
   Serial.begin(115200);
 #if defined(ARDUINO_ARCH_ESP32)
-  QuectelEC200U modem(SerialAT);
+  
+#if defined(ARDUINO_ARCH_ESP32)
+  HardwareSerial& SerialAT = Serial1;
+#else
+  #include <SoftwareSerial.h>
+  SoftwareSerial SerialAT(10, 11);
+#endif
+QuectelEC200U modem(SerialAT);
 #else
   QuectelEC200U modem(SerialAT);
 #endif

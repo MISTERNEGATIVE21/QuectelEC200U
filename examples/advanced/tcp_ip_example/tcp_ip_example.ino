@@ -1,15 +1,29 @@
 /*
-  TCP/IP Commands example for QuectelEC200U_Adv library
+  TCP/IP Commands example for QuectelEC200U library
 */
 
-#include <QuectelEC200U_Adv.h>
+#include <QuectelEC200U.h>
 #include <ArduinoJson.h>
 
 // Use Hardware Serial for communication with the modem
-HardwareSerial& modemSerial = Serial1;
 
-// Create a QuectelEC200U_Adv instance
-QuectelEC200U_Adv modem(modemSerial);
+
+// Create a QuectelEC200U instance
+
+#if defined(ARDUINO_ARCH_ESP32)
+  
+#else
+  #include <SoftwareSerial.h>
+  SoftwareSerial modemSerial(10, 11);
+#endif
+
+#if defined(ARDUINO_ARCH_ESP32)
+  HardwareSerial& modemSerial = Serial1;
+#else
+  #include <SoftwareSerial.h>
+  SoftwareSerial modemSerial(10, 11);
+#endif
+QuectelEC200U modem(modemSerial);
 
 void setup() {
   // Start serial communication for debugging
@@ -37,7 +51,7 @@ void setup() {
   }
   
   // Get APN dynamically
-  QuectelEC200U_Adv::PDPContext pdp_ctx = modem.getPDPContext(1);
+  QuectelEC200U::PDPContext pdp_ctx = modem.getPDPContext(1);
   if (pdp_ctx.cid == -1 || pdp_ctx.apn.length() == 0) {
     Serial.println("Failed to retrieve APN dynamically. Please check modem configuration or set APN manually.");
     while (1);

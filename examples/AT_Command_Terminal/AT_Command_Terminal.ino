@@ -24,24 +24,6 @@
 
 #include <QuectelEC200U.h>
 
-// Pin definitions - Adjust to match your hardware
-#define EC200U_RX_PIN 16      // ESP32 pin connected to EC200U TX
-#define EC200U_TX_PIN 17      // ESP32 pin connected to EC200U RX
-#define EC200U_PW_KEY_PIN 10  // Power key pin
-#define EC200U_STATUS_PIN 2   // Status pin (optional)
-
-#if defined(ARDUINO_ARCH_ESP32)
-HardwareSerial& SerialAT = Serial2;
-QuectelEC200U modem(SerialAT, 115200, EC200U_RX_PIN, EC200U_TX_PIN);
-#else
-#include <SoftwareSerial.h>
-SoftwareSerial SerialAT(EC200U_RX_PIN, EC200U_TX_PIN);
-QuectelEC200U modem(SerialAT);
-#endif
-
-// Terminal state
-String inputBuffer = "";
-bool terminalActive = true;
 
 // Power on the modem (one-time operation)
 void powerOnModem() {

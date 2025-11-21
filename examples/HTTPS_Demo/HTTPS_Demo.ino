@@ -12,7 +12,7 @@
 #define EC200U_STATUS_PIN 2
 
 #if defined(ARDUINO_ARCH_ESP32)
-HardwareSerial& SerialAT = Serial2;
+
 
 void EC200U_powerOn() {
   pinMode(EC200U_PW_KEY_PIN, OUTPUT);
@@ -37,7 +37,14 @@ const char* cert_path = "https_ca.pem";
 void setup() {
   Serial.begin(115200);
 #if defined(ARDUINO_ARCH_ESP32)
-  QuectelEC200U modem(SerialAT, 115200, EC200U_RX_PIN, EC200U_TX_PIN);
+  
+#if defined(ARDUINO_ARCH_ESP32)
+  HardwareSerial& SerialAT = Serial1;
+#else
+  #include <SoftwareSerial.h>
+  SoftwareSerial SerialAT(10, 11);
+#endif
+QuectelEC200U modem(SerialAT, 115200, EC200U_RX_PIN, EC200U_TX_PIN);
   EC200U_powerOn();
 #else
   QuectelEC200U modem(SerialAT);

@@ -1,8 +1,8 @@
 /*
-  QuectelEC200U_CN - Arduino library for Quectel EC200U (CN-AA)
+  QuectelEC200U_Adv_CN - Arduino library for Quectel EC200U (CN-AA)
   Author: misternegative21
   Maintainer: MisterNegative21 <misternegative21@gmail.com>
-  Repository: https://github.com/MISTERNEGATIVE21/QuectelEC200U
+  Repository: https://github.com/MISTERNEGATIVE21/QuectelEC200U_Adv
   License: MIT (see LICENSE)
 
   Quectel and EC200U are trademarks of Quectel Wireless Solutions Co., Ltd.
@@ -12,7 +12,7 @@
 #include "QuectelEC200U.h"
 #include <ArduinoJson.h>
 
-QuectelEC200U::QuectelEC200U(HardwareSerial &serial, uint32_t baud, int8_t rxPin, int8_t txPin) {
+QuectelEC200U::QuectelEC200U_Adv(HardwareSerial &serial, uint32_t baud, int8_t rxPin, int8_t txPin) {
   _serial = &serial;
   _hwSerial = &serial;
   _debugSerial = nullptr;
@@ -28,7 +28,7 @@ QuectelEC200U::QuectelEC200U(HardwareSerial &serial, uint32_t baud, int8_t rxPin
   _historyIndex = 0;
 }
 
-QuectelEC200U::QuectelEC200U(Stream &stream) {
+QuectelEC200U::QuectelEC200U_Adv(Stream &stream) {
   _serial = &stream;
   _hwSerial = nullptr;
   _debugSerial = nullptr;
@@ -915,9 +915,16 @@ bool QuectelEC200U::sendUSSD(const String &code, String &response) {
 }
 
 // ===== NTP / Clock =====
-bool QuectelEC200U::ntpSync(const String &server, int timezone) {
-  if (!sendAT("AT+QNTP=1,\"" + server + "\"", F("OK"), 1000)) return false;
-  return expectURC(F("+QNTP: 0"), 20000);
+bool QuectelEC200U::ntpSync(const String &server, int timezone, int contextID, int port) {
+    if (server.length() == 0) {
+        return false;
+    }
+    if (timezone < -48 || timezone > 56) {
+        return false;
+    }
+    String cmd = "AT+QNTP=" + String(contextID) + ",\"" + server + "\"," + String(port) + "," + String(timezone);
+    if (!sendAT(cmd, F("OK"), 1000)) return false;
+    return expectURC(F("+QNTP: 0"), 125000);
 }
 
 String QuectelEC200U::getClock() {
@@ -1272,3 +1279,449 @@ bool QuectelEC200U::setAudioChannel(int channel) {
 bool QuectelEC200U::setAudioInterface(const String &params) {
   return sendAT(String("AT+QDAI=") + params);
 }
+
+// ===== Ping =====
+bool QuectelEC200U::ping(const String &host, int contextID, int timeout, int pingnum) {
+  String cmd = "AT+QPING=" + String(contextID) + ",\"" + host + "\"," + String(timeout) + "," + String(pingnum);
+  return sendAT(cmd, F("+QPING:"), timeout * 1000 * pingnum);
+}
+
+
+
+// ===== DNS =====
+bool QuectelEC200U::setDNS(const String &primary, const String &secondary, int contextID) {
+    String cmd = "AT+QIDNSCFG=" + String(contextID);
+    if (!primary.isEmpty()) {
+        cmd += ",\"" + primary + "\"";
+        if (!secondary.isEmpty()) {
+            cmd += ",\"" + secondary + "\"";
+        }
+    }
+    return sendAT(cmd);
+}
+
+String QuectelEC200U::getIpByHostName(const String &hostname, int contextID) {
+    String cmd = "AT+QIDNSGIP=" + String(contextID) + ",\"" + hostname + "\"";
+    if (!sendAT(cmd, F("OK"), 1000)) return "";
+    String resp = readResponse(60000);
+    int urcIndex = resp.indexOf(F("+QIURC: \"dnsgip\""));
+    if (urcIndex != -1) {
+        int first_comma = resp.indexOf(',', urcIndex);
+        int second_comma = resp.indexOf(',', first_comma + 1);
+        int third_comma = resp.indexOf(',', second_comma + 1);
+        int fourth_comma = resp.indexOf(',', third_comma + 1);
+
+        if (first_comma != -1 && second_comma != -1 && third_comma != -1 && fourth_comma != -1) {
+            int err = resp.substring(first_comma + 1, second_comma).toInt();
+            if (err == 0) {
+                int ip_count = resp.substring(second_comma + 1, third_comma).toInt();
+                if (ip_count > 0) {
+                    int ip_end_index = resp.indexOf('\r', fourth_comma + 1);
+                    if (ip_end_index != -1) {
+                        return resp.substring(fourth_comma + 1, ip_end_index);
+                    }
+                }
+            }
+        }
+    }
+    return "";
+}
+
+// ===== ADC =====
+int QuectelEC200U::readADC() {
+    _serial->println(F("AT+QADC=0"));
+    String resp = readResponse(1000);
+    return _parseCsvInt(resp, F("+QADC: "), 1);
+}
+
+// ===== Packet Domain =====
+String QuectelEC200U::getPacketDataCounter() {
+    _serial->println(F("AT+QGDCNT?"));
+    return readResponse(1000);
+}
+
+String QuectelEC200U::readDynamicPDNParameters(int cid) {
+    _serial->println("AT+CGCONTRDP=" + String(cid));
+    return readResponse(1000);
+}
+
+QuectelEC200U::PDPContext QuectelEC200U::getPDPContext(int cid) {
+    PDPContext ctx;
+    ctx.cid = -1; // Indicate invalid context initially
+
+    _serial->println(F("AT+CGDCONT?"));
+    String resp = readResponse(1000); // Read the full response
+
+    // Look for a line starting with "+CGDCONT: <cid>"
+    String searchTag = "+CGDCONT: " + String(cid) + ",";
+    int startIndex = resp.indexOf(searchTag);
+
+    if (startIndex != -1) {
+        startIndex += searchTag.length(); // Move past the tag
+        int endIndex = resp.indexOf('\r', startIndex); // Find end of line
+        if (endIndex == -1) { // If no CR, take till end of string
+            endIndex = resp.length();
+        }
+        String line = resp.substring(startIndex, endIndex);
+
+        // Parse the line: "IP","JIONET","0.0.0.0",0,0
+        // Use a temporary char array and strtok for parsing, or careful indexOf/substring
+        // For simplicity and avoiding strtok modifying String, we'll do careful indexOf
+        
+        int currentPos = 0;
+        int quoteStart, quoteEnd;
+
+        // 1. PDP_type (e.g., "IP")
+        quoteStart = line.indexOf('"', currentPos);
+        if (quoteStart != -1) {
+            quoteEnd = line.indexOf('"', quoteStart + 1);
+            if (quoteEnd != -1) {
+                ctx.pdp_type = line.substring(quoteStart + 1, quoteEnd);
+                currentPos = quoteEnd + 1; // Move past the closing quote
+            }
+        }
+
+        // Move past comma if present
+        if (line.charAt(currentPos) == ',') {
+            currentPos++;
+        }
+
+        // 2. APN (e.g., "JIONET")
+        quoteStart = line.indexOf('"', currentPos);
+        if (quoteStart != -1) {
+            quoteEnd = line.indexOf('"', quoteStart + 1);
+            if (quoteEnd != -1) {
+                ctx.apn = line.substring(quoteStart + 1, quoteEnd);
+                currentPos = quoteEnd + 1;
+            }
+        }
+        
+        // Move past comma if present
+        if (line.charAt(currentPos) == ',') {
+            currentPos++;
+        }
+
+        // 3. P_ADDR (e.g., "0.0.0.0") - can be quoted or not
+        quoteStart = line.indexOf('"', currentPos);
+        if (quoteStart != -1) { // It's quoted
+            quoteEnd = line.indexOf('"', quoteStart + 1);
+            if (quoteEnd != -1) {
+                ctx.p_addr = line.substring(quoteStart + 1, quoteEnd);
+                currentPos = quoteEnd + 1;
+            }
+        } else { // It's not quoted, read until next comma or end
+            int nextComma = line.indexOf(',', currentPos);
+            if (nextComma != -1) {
+                ctx.p_addr = line.substring(currentPos, nextComma);
+                currentPos = nextComma + 1;
+            } else {
+                ctx.p_addr = line.substring(currentPos); // To end of line
+                currentPos = line.length();
+            }
+        }
+        
+        ctx.cid = cid; // Mark as valid
+    }
+    return ctx;
+}
+
+
+
+// ===== Hardware =====
+String QuectelEC200U::getBatteryCharge() {
+    _serial->println(F("AT+CBC"));
+    return readResponse(1000);
+}
+
+String QuectelEC200U::getWifiScan() {
+    _serial->println(F("AT+QWIFISCAN"));
+    return readResponse(10000); // Wi-Fi scan can take longer
+}
+
+// ===== Advanced TCP/IP =====
+bool QuectelEC200U::switchDataAccessMode(int connectID, int accessMode) {
+    return sendAT("AT+QISWTMD=" + String(connectID) + "," + String(accessMode), (accessMode == 2 ? F("CONNECT") : F("OK")));
+}
+
+bool QuectelEC200U::echoSendData(bool enable) {
+    return sendAT(String("AT+QISDE=") + (enable ? "1" : "0"));
+}
+
+// ===== QCFG - Extended settings =====
+bool QuectelEC200U::setNetworkScanMode(int mode) {
+    return sendAT("AT+QCFG=\"nwscanmode\"," + String(mode));
+}
+
+bool QuectelEC200U::setBand(const String &gsm_mask, const String &lte_mask) {
+    return sendAT("AT+QCFG=\"band\"," + gsm_mask + "," + lte_mask);
+}
+
+// ===== Modem Identification =====
+String QuectelEC200U::getManufacturerIdentification() {
+    _serial->println(F("AT+GMI"));
+    return readResponse(1000);
+}
+
+String QuectelEC200U::getModelIdentification() {
+    _serial->println(F("AT+GMM"));
+    return readResponse(1000);
+}
+
+String QuectelEC200U::getFirmwareRevision() {
+    _serial->println(F("AT+GMR"));
+    return readResponse(1000);
+}
+
+// ===== General Commands =====
+bool QuectelEC200U::restoreFactoryDefaults() {
+    logDebug(F("Performing factory reset..."));
+    bool result = sendAT(F("AT&F"), F("OK"), 5000);
+    if (result) {
+        _initialized = false;
+        _echoDisabled = false;
+        _simChecked = false;
+        _networkRegistered = false;
+        _state = MODEM_UNINITIALIZED;
+    }
+    return result;
+}
+
+String QuectelEC200U::showCurrentConfiguration() {
+    _serial->println(F("AT&V"));
+    return readResponse(2000);
+}
+
+bool QuectelEC200U::storeConfiguration(int profile) {
+    return sendAT("AT&W" + String(profile));
+}
+
+bool QuectelEC200U::restoreConfiguration(int profile) {
+    return sendAT("ATZ" + String(profile));
+}
+
+bool QuectelEC200U::setResultCodeEcho(bool enable) {
+    return sendAT(String("ATQ") + (enable ? "0" : "1"));
+}
+
+bool QuectelEC200U::setResultCodeFormat(bool verbose) {
+    return sendAT(String("ATV") + (verbose ? "1" : "0"));
+}
+
+bool QuectelEC200U::setCommandEcho(bool enable) {
+    return sendAT(String("ATE") + (enable ? "1" : "0"));
+}
+
+bool QuectelEC200U::repeatPreviousCommand() {
+    _serial->println(F("A/"));
+    return expectURC(F("OK"), 3000);
+}
+
+bool QuectelEC200U::setSParameter(int s, int value) {
+    return sendAT("ATS" + String(s) + "=" + String(value));
+}
+
+bool QuectelEC200U::setFunctionMode(int fun, int rst) {
+    return sendAT("AT+CFUN=" + String(fun) + "," + String(rst));
+}
+
+bool QuectelEC200U::setErrorMessageFormat(int format) {
+    return sendAT("AT+CMEE=" + String(format));
+}
+
+bool QuectelEC200U::setTECharacterSet(const String &chset) {
+    return sendAT("AT+CSCS=\"" + chset + "\"");
+}
+
+bool QuectelEC200U::setURCOutputRouting(const String &port) {
+    return sendAT("AT+QURCCFG=\"urcport\",\"" + port + "\"");
+}
+
+// ===== UART Control Commands =====
+bool QuectelEC200U::setDCDFunctionMode(int mode) {
+    return sendAT(String("AT&C") + mode);
+}
+
+bool QuectelEC200U::setDTRFunctionMode(int mode) {
+    return sendAT(String("AT&D") + mode);
+}
+
+bool QuectelEC200U::setUARTFlowControl(int dce_by_dte, int dte_by_dce) {
+    return sendAT("AT+IFC=" + String(dce_by_dte) + "," + String(dte_by_dce));
+}
+
+bool QuectelEC200U::setUARTFrameFormat(int format, int parity) {
+    return sendAT("AT+ICF=" + String(format) + "," + String(parity));
+}
+
+bool QuectelEC200U::setUARTBaudRate(long rate) {
+    return sendAT("AT+IPR=" + String(rate));
+}
+
+// ===== Status Control and Extended Settings =====
+String QuectelEC200U::getActivityStatus() {
+    _serial->println(F("AT+CPAS"));
+    return readResponse(1000);
+}
+
+bool QuectelEC200U::setURCIndication(const String &urc_type, bool enable) {
+    return sendAT("AT+QINDCFG=\"" + urc_type + "\"," + (enable ? "1" : "0"));
+}
+
+// ===== (U)SIM Related Commands =====
+String QuectelEC200U::getIMSI() {
+    _serial->println(F("AT+CIMI"));
+    return readResponse(1000);
+}
+
+String QuectelEC200U::getICCID() {
+    _serial->println(F("AT+QCCID"));
+    return readResponse(1000);
+}
+
+String QuectelEC200U::getPinRetries() {
+    _serial->println(F("AT+QPINC"));
+    return readResponse(1000);
+}
+
+// ===== Network Service Commands =====
+String QuectelEC200U::getDetailedSignalQuality() {
+    _serial->println(F("AT+QCSQ"));
+    return readResponse(1000);
+}
+
+String QuectelEC200U::getNetworkTime() {
+    _serial->println(F("AT+QLTS"));
+    return readResponse(1000);
+}
+
+String QuectelEC200U::getNetworkInfo() {
+    _serial->println(F("AT+QNWINFO"));
+    return readResponse(1000);
+}
+
+// ===== Call-Related Commands =====
+bool QuectelEC200U::setVoiceHangupControl(int mode) {
+    return sendAT("AT+CVHU=" + String(mode));
+}
+
+bool QuectelEC200U::hangupVoiceCall() {
+    return sendAT("AT+CHUP");
+}
+
+bool QuectelEC200U::setConnectionTimeout(int seconds) {
+    return sendAT("ATS7=" + String(seconds));
+}
+
+// ===== Phonebook Commands =====
+String QuectelEC200U::getSubscriberNumber() {
+    _serial->println(F("AT+CNUM"));
+    return readResponse(1000);
+}
+
+String QuectelEC200U::findPhonebookEntries(const String &findtext) {
+    _serial->println("AT+CPBF=\"" + findtext + "\"");
+    return readResponse(5000);
+}
+
+String QuectelEC200U::readPhonebookEntry(int index1, int index2) {
+    String cmd = "AT+CPBR=" + String(index1);
+    if (index2 != -1) {
+        cmd += "," + String(index2);
+    }
+    _serial->println(cmd);
+    return readResponse(5000);
+}
+
+bool QuectelEC200U::selectPhonebookStorage(const String &storage) {
+    return sendAT("AT+CPBS=\"" + storage + "\"");
+}
+
+bool QuectelEC200U::writePhonebookEntry(int index, const String &number, const String &text, int type) {
+    return sendAT("AT+CPBW=" + String(index) + ",\"" + number + "\"," + String(type) + ",\"" + text + "\"");
+}
+
+// ===== SMS Commands =====
+bool QuectelEC200U::setMessageFormat(int mode) {
+    return sendAT("AT+CMGF=" + String(mode));
+}
+
+bool QuectelEC200U::setServiceCenterAddress(const String &sca) {
+    return sendAT("AT+CSCA=\"" + sca + "\"");
+}
+
+String QuectelEC200U::listMessages(const String &stat) {
+    _serial->println("AT+CMGL=\"" + stat + "\"");
+    return readResponse(10000);
+}
+
+bool QuectelEC200U::setNewMessageIndication(int mode, int mt, int bm, int ds, int bfr) {
+    return sendAT("AT+CNMI=" + String(mode) + "," + String(mt) + "," + String(bm) + "," + String(ds) + "," + String(bfr));
+}
+
+// ===== Packet Domain Commands =====
+bool QuectelEC200U::gprsAttach(bool attach) {
+    return sendAT("AT+CGATT=" + String(attach ? 1 : 0));
+}
+
+bool QuectelEC200U::setGPRSClass(const String &gprs_class) {
+    return sendAT("AT+CGCLASS=\"" + gprs_class + "\"");
+}
+
+bool QuectelEC200U::setPacketDomainEventReporting(int mode) {
+    return sendAT("AT+CGEREP=" + String(mode));
+}
+
+// ===== Supplementary Service Commands =====
+bool QuectelEC200U::setCallForwarding(int reason, int mode, const String &number, int time) {
+    return sendAT("AT+CCFC=" + String(reason) + "," + String(mode) + ",\"" + number + "\"," + String(time));
+}
+
+bool QuectelEC200U::setCallWaiting(int mode) {
+    return sendAT("AT+CCWA=" + String(mode));
+}
+
+bool QuectelEC200U::setCallingLineIdentificationPresentation(bool enable) {
+    return sendAT("AT+CLIP=" + String(enable ? 1 : 0));
+}
+
+bool QuectelEC200U::setCallingLineIdentificationRestriction(int mode) {
+    return sendAT("AT+CLIR=" + String(mode));
+}
+
+// ===== More Audio Commands =====
+bool QuectelEC200U::recordAudio(const String &filename) {
+    return sendAT("AT+QAUDRD=\"" + filename + "\"");
+}
+
+bool QuectelEC200U::playAudio(const String &filename) {
+    return sendAT("AT+QAUDPLAY=\"" + filename + "\"");
+}
+
+bool QuectelEC200U::stopAudio() {
+    return sendAT("AT+QAUDSTOP");
+}
+
+bool QuectelEC200U::playTextToSpeech(const String &text) {
+    return sendAT("AT+QTTS=1,\"" + text + "\"");
+}
+
+
+
+// ===== Remaining TCP/IP Commands =====
+bool QuectelEC200U::sendHexData(int connectID, const String &hex_string) {
+    return sendAT("AT+QISENDEX=" + String(connectID) + ",\"" + hex_string + "\"");
+}
+
+
+// ===== Advanced Error Reporting and SIM =====
+String QuectelEC200U::getExtendedErrorReports() {
+    _serial->println(F("AT+CEER"));
+    return readResponse(2000);
+}
+
+String QuectelEC200U::getSIMStatus() {
+    _serial->println(F("AT+CPIN?"));
+    return readResponse(1000);
+}
+
+
