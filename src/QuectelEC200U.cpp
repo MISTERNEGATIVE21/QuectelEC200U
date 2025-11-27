@@ -1765,12 +1765,6 @@ String QuectelEC200U::getSIMStatus() {
 // Power Management
 void QuectelEC200U::powerOn(int pin) {
   pinMode(pin, OUTPUT);
-  digitalWrite(pin, HIGH); // Ensure it starts high
-  delay(100);
-  
-  // Pulse low to power on
-  digitalWrite(pin, LOW);
-  delay(500); // Hold for 500ms
-  digitalWrite(pin, HIGH);
+  digitalWrite(pin, LOW); // Set LOW and keep it there
   delay(2000); // Wait for boot
 }

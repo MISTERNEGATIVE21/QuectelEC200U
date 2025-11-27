@@ -384,9 +384,14 @@ const char index_html[] PROGMEM = R"rawliteral(
                             <div class="status-value" id="model">--</div>
                         </div>
                     </div>
-                    <button onclick="refreshStatus()" class="secondary" style="margin-top: 15px;">
-                        <span style="margin-right: 5px;">↻</span> Refresh Status
-                    </button>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
+                        <button onclick="refreshStatus()" class="secondary">
+                            <span style="margin-right: 5px;">↻</span> Refresh
+                        </button>
+                        <button onclick="powerOnModem()" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                            <span style="margin-right: 5px;">⚡</span> Power On
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -699,6 +704,18 @@ const char index_html[] PROGMEM = R"rawliteral(
             const res = await apiCall('/api/wifi/forget', {});
             if (res && res.success) {
                 showToast(res.message);
+            }
+        }
+
+        async function powerOnModem() {
+            if (!confirm("Turn on modem? This takes about 3 seconds.")) return;
+            showToast("Powering On...");
+            const res = await apiCall('/api/modem/poweron', {});
+            if (res && res.success) {
+                showToast(res.message);
+                setTimeout(refreshStatus, 3000);
+            } else {
+                showToast("Failed to Power On");
             }
         }
 

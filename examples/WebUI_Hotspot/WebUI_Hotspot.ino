@@ -37,9 +37,9 @@ const char* ap_password = "password";
 Preferences preferences;
 
 // Modem Pins (Adjust for your board)
-#define RX_PIN 16
+#define RX_PIN 18
 #define TX_PIN 17
-#define POWER_PIN 23 // Optional power pin
+#define POWER_PIN 10 // Optional power pin
 
 // Initialize Modem
 HardwareSerial modemSerial(1);
@@ -306,13 +306,39 @@ void handleWifiForget() {
   ESP.restart();
 }
 
+void handleModemPowerOn() {
+  sendCorsHeaders();
+  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
+  
+  modem.powerOn(POWER_PIN);
+  bool success = modem.begin();
+  
+  JsonDocument res;
+  res["success"] = success;
+  res["message"] = success ? "Modem Powered On" : "Initialization Failed";
+  String response;
+  serializeJson(res, response);
+  server.send(200, "application/json", response);
+}
+
 void setup() {
   Serial.begin(115200);
   
-  // Init Modem
+  // Init Modem - Try to power on but don't block indefinitely
   Serial.println("Initializing Modem...");
-  modem.powerOn(POWER_PIN);
-  modem.begin();
+  // modem.powerOn(POWER_PIN); // Moved to manual control or non-blocking check
+  // Check if modem is responsive, if not, try power on
+  if (!modem.begin()) {
+    Serial.println("Modem not responding, attempting power on...");
+    modem.powerOn(POWER_PIN);
+    if (modem.begin()) {
+        Serial.println("Modem initialized.");
+    } else {
+        Serial.println("Modem failed to initialize. Use Web UI to retry.");
+    }
+  } else {
+    Serial.println("Modem already ready.");
+  }
   
   // WiFi Setup
   preferences.begin("wifi", true);
@@ -368,6 +394,7 @@ void setup() {
   server.on("/api/tcp/send", handleTcpSend);
   server.on("/api/wifi/save", handleWifiSave);
   server.on("/api/wifi/forget", handleWifiForget);
+  server.on("/api/modem/poweron", handleModemPowerOn);
   
   // Handle OPTIONS for CORS
   server.on("/api/status", HTTP_OPTIONS, handleOptions);
@@ -378,6 +405,7 @@ void setup() {
   server.on("/api/tcp/send", HTTP_OPTIONS, handleOptions);
   server.on("/api/wifi/save", HTTP_OPTIONS, handleOptions);
   server.on("/api/wifi/forget", HTTP_OPTIONS, handleOptions);
+  server.on("/api/modem/poweron", HTTP_OPTIONS, handleOptions);
   
   server.onNotFound(handleNotFound);
 

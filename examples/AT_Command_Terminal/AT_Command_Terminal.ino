@@ -24,6 +24,21 @@
 
 #include <QuectelEC200U.h>
 
+// Pin Definitions
+#define EC200U_RX_PIN 16
+#define EC200U_TX_PIN 17
+#define EC200U_PW_KEY_PIN 10
+#define EC200U_STATUS_PIN 21 // Example status pin
+
+// Global Objects
+HardwareSerial SerialAT(1);
+QuectelEC200U modem(SerialAT, 115200, EC200U_RX_PIN, EC200U_TX_PIN);
+
+// Global Variables
+String inputBuffer = "";
+bool terminalActive = true;
+
+
 
 // Power on the modem (one-time operation)
 void powerOnModem() {
