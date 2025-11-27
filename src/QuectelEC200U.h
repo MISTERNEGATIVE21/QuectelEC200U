@@ -243,27 +243,6 @@ class QuectelEC200U {
     bool setCommandEcho(bool enable);
     bool repeatPreviousCommand();
     bool setSParameter(int s, int value);
-    bool setFunctionMode(int fun, int rst = 0);
-    bool setErrorMessageFormat(int format);
-    bool setTECharacterSet(const String &chset);
-    bool setURCOutputRouting(const String &port);
-
-    // UART Control Commands
-    bool setDCDFunctionMode(int mode);
-    bool setDTRFunctionMode(int mode);
-    bool setUARTFlowControl(int dce_by_dte, int dte_by_dce);
-    bool setUARTFrameFormat(int format, int parity);
-    bool setUARTBaudRate(long rate);
-
-    // Status Control and Extended Settings
-    String getActivityStatus();
-    bool setURCIndication(const String &urc_type, bool enable);
-
-    // (U)SIM Related Commands
-    String getIMSI();
-    String getICCID();
-    String getPinRetries();
-
     // Network Service Commands
     String getDetailedSignalQuality();
     String getNetworkTime();

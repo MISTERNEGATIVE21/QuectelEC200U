@@ -340,6 +340,7 @@ const char index_html[] PROGMEM = R"rawliteral(
                 <div class="nav-tab" onclick="showSection('terminal', this)">Terminal</div>
                 <div class="nav-tab" onclick="showSection('tcp', this)">TCP</div>
                 <div class="nav-tab" onclick="showSection('settings', this)">Settings</div>
+                <div class="nav-tab" onclick="showSection('advanced', this)">Advanced</div>
             </div>
         </div>
 
@@ -388,9 +389,14 @@ const char index_html[] PROGMEM = R"rawliteral(
                         <button onclick="refreshStatus()" class="secondary">
                             <span style="margin-right: 5px;">↻</span> Refresh
                         </button>
-                        <button onclick="powerOnModem()" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-                            <span style="margin-right: 5px;">⚡</span> Power On
-                        </button>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
+                            <button onclick="powerOnModem()" style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 8px;">
+                                <span style="margin-right: 5px;">⚡</span> On
+                            </button>
+                            <button onclick="powerOffModem()" class="danger" style="padding: 8px;">
+                                <span style="margin-right: 5px;">⭕</span> Off
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -510,6 +516,41 @@ const char index_html[] PROGMEM = R"rawliteral(
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px;">
                     <button onclick="saveWifi()">Save & Connect</button>
                     <button onclick="forgetWifi()" class="danger">Forget WiFi</button>
+                </div>
+                <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                    <button onclick="rebootEsp()" class="secondary" style="width: 100%;">Reboot ESP32</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advanced Features -->
+        <div id="advanced" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Advanced Controls</div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3>SIM & Network</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <button onclick="apiCall('/api/sim/switch', {}, 'Switching SIM...')">Switch SIM</button>
+                        <button onclick="apiCall('/api/sim/isim', {enable: '1'}, 'Enabling ISIM...')">Enable ISIM</button>
+                        <button onclick="apiCall('/api/sim/dsds', {dsds: '1'}, 'Setting DSDS...')">Set DSDS</button>
+                        <button onclick="apiCall('/api/call/block', {enable: '1'}, 'Blocking Calls...')">Block Calls</button>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <h3>System</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <button onclick="apiCall('/api/system/usb', {}, 'Setting USB CDC...')">Set USB CDC</button>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <h3>Quectel WiFi Scan</h3>
+                    <button onclick="scanQuectelWifi()" class="secondary" style="width: 100%;">Scan Networks</button>
+                    <div id="quectel-wifi-results" style="margin-top: 10px; font-family: monospace; white-space: pre-wrap; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; display: none;"></div>
                 </div>
             </div>
         </div>
@@ -716,6 +757,30 @@ const char index_html[] PROGMEM = R"rawliteral(
                 setTimeout(refreshStatus, 3000);
             } else {
                 showToast("Failed to Power On");
+            }
+        }
+
+        async function powerOffModem() {
+            if (!confirm("Turn off modem?")) return;
+            showToast("Powering Off...");
+            const res = await apiCall('/api/modem/poweroff', {});
+            if (res && res.success) showToast(res.message);
+        }
+
+        async function rebootEsp() {
+            if (!confirm("Reboot ESP32?")) return;
+            showToast("Rebooting...");
+            await apiCall('/api/esp/reboot', {});
+        }
+
+        async function scanQuectelWifi() {
+            document.getElementById('quectel-wifi-results').style.display = 'block';
+            document.getElementById('quectel-wifi-results').innerText = "Scanning...";
+            const res = await apiCall('/api/quectel/wifi/scan', {});
+            if (res && res.success) {
+                document.getElementById('quectel-wifi-results').innerText = res.data || "No networks found.";
+            } else {
+                document.getElementById('quectel-wifi-results').innerText = "Scan failed.";
             }
         }
 

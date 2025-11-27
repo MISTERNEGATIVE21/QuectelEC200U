@@ -1810,3 +1810,86 @@ void QuectelEC200U::powerOn(int pin) {
   digitalWrite(pin, LOW); // Set LOW and keep it there
   delay(2000); // Wait for boot
 }
+
+// ==========================================
+// Developer Guide Implementation (New Features)
+// ==========================================
+
+// [A] Network & SIM Control
+bool QuectelEC200U::switchSimCard() {
+    return sendAT(F("AT+QSIMCHK"));
+}
+
+bool QuectelEC200U::toggleISIM(bool enable) {
+    String cmd = F("AT+QIMSCFG=\"isim\",");
+    cmd += enable ? "1" : "0";
+    return sendAT(cmd);
+}
+
+bool QuectelEC200U::setDSDSMode(bool dsds) {
+    String cmd = F("AT+QDSTYPE=");
+    cmd += dsds ? "1" : "0";
+    return sendAT(cmd);
+}
+
+String QuectelEC200U::getOperatorName() {
+    sendATRaw(F("AT+QSPN"));
+    char buffer[256];
+    readResponse(buffer, sizeof(buffer), 2000);
+    return extractQuotedString(buffer, "+QSPN");
+}
+
+bool QuectelEC200U::preventNetworkModeSwitch(bool enable) {
+    String cmd = F("AT+QCFG=\"cops_no_mode_change\",");
+    cmd += enable ? "1" : "0";
+    return sendAT(cmd);
+}
+
+// [B] Audio & Voice
+bool QuectelEC200U::blockIncomingCalls(bool enable) {
+    String cmd = F("AT+QREFUSECS=");
+    cmd += enable ? "1" : "0";
+    return sendAT(cmd);
+}
+
+bool QuectelEC200U::playAudioDuringCall(const char* filename) {
+    String cmd = F("AT+QAUDPLAY=\"");
+    cmd += filename;
+    cmd += "\"";
+    return sendAT(cmd);
+}
+
+bool QuectelEC200U::configureAudioCodecIIC(int mode) {
+    String cmd = F("AT+QAUDCFG=\"iic\",");
+    cmd += mode;
+    return sendAT(cmd);
+}
+
+// [C] Data & TCP/IP
+bool QuectelEC200U::setTCPMSS(int mss) {
+    String cmd = F("AT+QCFG=\"tcp/mss\",");
+    cmd += mss;
+    return sendAT(cmd);
+}
+
+bool QuectelEC200U::setBIPStatusURC(bool enable) {
+    String cmd = F("AT+QCFG=\"bip/status\",");
+    cmd += enable ? "1" : "0";
+    return sendAT(cmd);
+}
+
+// [D] System & Hardware
+bool QuectelEC200U::setUSBModeCDC() {
+    return sendAT(F("AT+QUSBCFG=3,1"));
+}
+
+bool QuectelEC200U::configureRIAuto(bool enable) {
+    if (enable) return sendAT(F("AT+QCFG=\"urc/ri/ring\",\"auto\""));
+    else return sendAT(F("AT+QCFG=\"urc/ri/ring\",\"off\""));
+}
+
+bool QuectelEC200U::configureGNSSURC(bool enable) {
+    String cmd = F("AT+QGPSCFG=\"urc\",");
+    cmd += enable ? "1" : "0";
+    return sendAT(cmd);
+}

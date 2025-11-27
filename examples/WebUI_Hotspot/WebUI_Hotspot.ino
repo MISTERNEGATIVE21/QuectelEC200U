@@ -321,6 +321,80 @@ void handleModemPowerOn() {
   server.send(200, "application/json", response);
 }
 
+void handleModemPowerOff() {
+  sendCorsHeaders();
+  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
+  
+  bool success = modem.powerOff();
+  
+  JsonDocument res;
+  res["success"] = success;
+  res["message"] = success ? "Modem Powered Off" : "Power Off Failed";
+  String response;
+  serializeJson(res, response);
+  server.send(200, "application/json", response);
+}
+
+void handleEspReboot() {
+  sendCorsHeaders();
+  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
+  
+  server.send(200, "application/json", "{\"success\":true,\"message\":\"Rebooting ESP32...\"}");
+  delay(500);
+  ESP.restart();
+}
+
+void handleQuectelWifiScan() {
+  sendCorsHeaders();
+  String scanResult = modem.getWifiScan();
+  
+  JsonDocument res;
+  res["success"] = true;
+  res["data"] = scanResult;
+  String response;
+  serializeJson(res, response);
+  server.send(200, "application/json", response);
+}
+
+// Advanced Features Handlers
+void handleSimSwitch() {
+  sendCorsHeaders();
+  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
+  bool success = modem.switchSimCard();
+  server.send(200, "application/json", success ? "{\"success\":true}" : "{\"success\":false}");
+}
+
+void handleToggleISIM() {
+  sendCorsHeaders();
+  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
+  bool enable = server.arg("enable") == "1";
+  bool success = modem.toggleISIM(enable);
+  server.send(200, "application/json", success ? "{\"success\":true}" : "{\"success\":false}");
+}
+
+void handleSetDSDS() {
+  sendCorsHeaders();
+  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
+  bool dsds = server.arg("dsds") == "1";
+  bool success = modem.setDSDSMode(dsds);
+  server.send(200, "application/json", success ? "{\"success\":true}" : "{\"success\":false}");
+}
+
+void handleBlockCalls() {
+  sendCorsHeaders();
+  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
+  bool enable = server.arg("enable") == "1";
+  bool success = modem.blockIncomingCalls(enable);
+  server.send(200, "application/json", success ? "{\"success\":true}" : "{\"success\":false}");
+}
+
+void handleSetUSBMode() {
+  sendCorsHeaders();
+  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
+  bool success = modem.setUSBModeCDC();
+  server.send(200, "application/json", success ? "{\"success\":true}" : "{\"success\":false}");
+}
+
 void setup() {
   Serial.begin(115200);
   
@@ -395,6 +469,16 @@ void setup() {
   server.on("/api/wifi/save", handleWifiSave);
   server.on("/api/wifi/forget", handleWifiForget);
   server.on("/api/modem/poweron", handleModemPowerOn);
+  server.on("/api/modem/poweroff", handleModemPowerOff);
+  server.on("/api/esp/reboot", handleEspReboot);
+  server.on("/api/quectel/wifi/scan", handleQuectelWifiScan);
+  
+  // Advanced Features
+  server.on("/api/sim/switch", handleSimSwitch);
+  server.on("/api/sim/isim", handleToggleISIM);
+  server.on("/api/sim/dsds", handleSetDSDS);
+  server.on("/api/call/block", handleBlockCalls);
+  server.on("/api/system/usb", handleSetUSBMode);
   
   // Handle OPTIONS for CORS
   server.on("/api/status", HTTP_OPTIONS, handleOptions);
@@ -406,6 +490,14 @@ void setup() {
   server.on("/api/wifi/save", HTTP_OPTIONS, handleOptions);
   server.on("/api/wifi/forget", HTTP_OPTIONS, handleOptions);
   server.on("/api/modem/poweron", HTTP_OPTIONS, handleOptions);
+  server.on("/api/modem/poweroff", HTTP_OPTIONS, handleOptions);
+  server.on("/api/esp/reboot", HTTP_OPTIONS, handleOptions);
+  server.on("/api/quectel/wifi/scan", HTTP_OPTIONS, handleOptions);
+  server.on("/api/sim/switch", HTTP_OPTIONS, handleOptions);
+  server.on("/api/sim/isim", HTTP_OPTIONS, handleOptions);
+  server.on("/api/sim/dsds", HTTP_OPTIONS, handleOptions);
+  server.on("/api/call/block", HTTP_OPTIONS, handleOptions);
+  server.on("/api/system/usb", HTTP_OPTIONS, handleOptions);
   
   server.onNotFound(handleNotFound);
 
