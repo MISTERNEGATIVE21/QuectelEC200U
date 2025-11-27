@@ -1,8 +1,8 @@
 /*
-  QuectelEC200U_Adv_CN - Arduino library for Quectel EC200U (CN-AA)
+  QuectelEC200U- Arduino library for Quectel EC200U (CN-AA)
   Author: misternegative21
   Maintainer: MisterNegative21 <misternegative21@gmail.com>
-  Repository: https://github.com/MISTERNEGATIVE21/QuectelEC200U_Adv
+  Repository: https://github.com/MISTERNEGATIVE21/QuectelEC200U
   License: MIT (see LICENSE)
 
   Quectel and EC200U are trademarks of Quectel Wireless Solutions Co., Ltd.
@@ -262,6 +262,10 @@ bool QuectelEC200U::sendAT(const String &cmd, const String &expect, uint32_t tim
 
   _lastError = ErrorCode::UNKNOWN;
   return false;
+}
+
+bool QuectelEC200U::sendAT(const String &cmd) {
+  return sendAT(cmd, F("OK"), 1000);
 }
 
 
@@ -1750,10 +1754,7 @@ bool QuectelEC200U::setPacketDomainEventReporting(int mode) {
 }
 
 // Hardware
-String QuectelEC200U::getWifiScan() {
-    _serial->println(F("AT+QWIFI=1")); // Assuming AT+QWIFI=1 triggers scan
-    return readResponse(5000);
-}
+
 
 // ===== Supplementary Service Commands =====
 bool QuectelEC200U::setCallForwarding(int reason, int mode, const String &number, int time) {
@@ -1899,3 +1900,6 @@ bool QuectelEC200U::configureGNSSURC(bool enable) {
     cmd += enable ? "1" : "0";
     return sendAT(cmd);
 }
+
+
+

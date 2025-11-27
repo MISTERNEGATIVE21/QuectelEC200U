@@ -60,10 +60,95 @@ enum class ErrorCode {
 
 class QuectelEC200U {
   public:
+    // HardwareSerial constructor (auto-configure on begin). On ESP32, optional RX/TX pins are supported.
+    QuectelEC200U(HardwareSerial &serial, uint32_t baud = 115200, int8_t rxPin = -1, int8_t txPin = -1);
+    
+    // Generic Stream constructor (for SoftwareSerial or other streams)
+    QuectelEC200U(Stream &stream);
+
+    bool begin(bool forceReinit = false);
+    
+    // Power Management
+    void powerOn(int pin);
+
+    // Core Communication
+    bool sendAT(const String &cmd);
+    bool sendAT(const String &cmd, const String &expect, uint32_t timeout = 1000);
+    void sendATRaw(const String &cmd);
+    String readResponse(uint32_t timeout = 1000);
+    int readResponse(char* buffer, size_t length, uint32_t timeout);
+    bool sendCommand(const String &cmd, const String &expected, uint32_t timeout = 1000);
+    void enableDebug(Stream &debugSerial);
+
+    // Advanced Features
+    bool switchSimCard();
+    bool toggleISIM(bool enable);
+    bool setDSDSMode(bool enable);
+    bool blockIncomingCalls(bool enable);
+    bool setUSBModeCDC();
+
+    // Advanced Network
+    String getOperatorName();
+    bool preventNetworkModeSwitch(bool enable);
+
+    // Advanced Audio
+    bool playAudioDuringCall(const char* filename);
+    bool configureAudioCodecIIC(int mode);
+    
+    // Audio/Volume Control
+    bool setSpeakerVolume(int level);
+    bool setRingerVolume(int level);
+    bool setMicMute(bool mute);
+    bool setMicGain(int channel, int level);
+    bool setSidetone(bool enable, int level);
+    bool setAudioChannel(int channel);
+    bool setAudioInterface(const String &params);
+
+    // Advanced Data
+    bool setTCPMSS(int mss);
+    bool setBIPStatusURC(bool enable);
+    bool switchDataAccessMode(int connectID, int accessMode);
+    bool echoSendData(bool enable);
+
+    // Advanced System
+    bool configureRIAuto(bool enable);
+    bool configureGNSSURC(bool enable);
+    
+    // Network/Band Control
+    bool setNetworkScanMode(int mode);
+    bool setBand(const String &gsm_mask, const String &lte_mask);
+
+
     int getSignalStrength();
+    String getBatteryCharge();
     bool setAPN(const char* apn);
     String getModemInfo();
     bool factoryReset();
+    bool restoreFactoryDefaults();
+    String showCurrentConfiguration();
+    bool storeConfiguration(int profile);
+    bool restoreConfiguration(int profile);
+    bool setResultCodeEcho(bool enable);
+    bool setResultCodeFormat(bool verbose);
+    bool setCommandEcho(bool enable);
+    bool repeatPreviousCommand();
+    bool setSParameter(int s, int value);
+    bool setFunctionMode(int fun, int rst);
+    bool setErrorMessageFormat(int format);
+    bool setTECharacterSet(const String &chset);
+    bool setURCOutputRouting(const String &port);
+    
+    // UART Control
+    bool setDCDFunctionMode(int mode);
+    bool setDTRFunctionMode(int mode);
+    bool setUARTFlowControl(int dce_by_dte, int dte_by_dce);
+    bool setUARTFrameFormat(int format, int parity);
+    bool setUARTBaudRate(long rate);
+    
+    // Status
+    String getActivityStatus();
+    bool setURCIndication(const String &urc_type, bool enable);
+
     [[deprecated("Use begin() instead")]] bool modem_init();
     
     // Network + PDP
@@ -71,11 +156,11 @@ class QuectelEC200U {
     bool attachData(const char* apn, const char* user = "", const char* pass = "", int auth = 0);
     bool activatePDP(int ctxId = 1);
     bool deactivatePDP(int ctxId = 1);
+    bool activatePDPAsync(int ctxId);
+    bool deactivatePDPAsync(int ctxId);
     int getRegistrationStatus(bool eps = true);
     bool isSimReady();
     String getOperator();
-    
-    // SMS
     bool sendSMS(const char* number, const char* text);
     String readSMS(int index);
     bool deleteSMS(int index);
@@ -160,7 +245,6 @@ class QuectelEC200U {
     void clearHistory();
     
     // Power management
-    void powerOn(int pin);
     bool reboot();
     bool powerOff();
     
@@ -198,45 +282,6 @@ class QuectelEC200U {
     String getPacketDataCounter();
     String readDynamicPDNParameters(int cid = 1);
     PDPContext getPDPContext(int cid = 1);
-
-    // Audio
-    bool setSpeakerVolume(int level);
-    bool setRingerVolume(int level);
-    bool setMicMute(bool mute);
-    bool setMicGain(int channel, int level);
-    bool setSidetone(bool enable, int level);
-    bool setAudioChannel(int channel);
-    bool setAudioInterface(const String &params);
-    bool audioLoopback(bool enable);
-
-    // Hardware
-    String getBatteryCharge();
-    String getWifiScan();
-    
-    // Advanced TCP/IP
-    bool switchDataAccessMode(int connectID, int accessMode);
-    bool echoSendData(bool enable);
-
-    // QCFG - Extended settings
-    bool setNetworkScanMode(int mode);
-    bool setBand(const String &gsm_mask, const String &lte_mask);
-
-    // Modem Identification
-    String getManufacturerIdentification();
-    String getModelIdentification();
-    String getFirmwareRevision();
-
-    // General Commands
-    bool restoreFactoryDefaults();
-    String showCurrentConfiguration();
-    bool storeConfiguration(int profile = 0);
-    bool restoreConfiguration(int profile = 0);
-    bool setResultCodeEcho(bool enable);
-    bool setResultCodeFormat(bool verbose);
-    bool setCommandEcho(bool enable);
-    bool repeatPreviousCommand();
-    bool setSParameter(int s, int value);
-    // Network Service Commands
     String getDetailedSignalQuality();
     String getNetworkTime();
     String getNetworkInfo();
@@ -288,13 +333,24 @@ class QuectelEC200U {
     bool setTCPConfig(const String &param, const String &value);
     String getSocketStatus(int connectID);
     int getTCPError();
+    // Context Configuration
+    bool configureContext(int ctxId, int type, const String &apn, const String &user, const String &pass, int auth);
 
-    // Asynchronous PDP Context
-    bool activatePDPAsync(int ctxId = 1);
-    bool deactivatePDPAsync(int ctxId = 1);
-    
-    
-    
+    // General Modem Configuration
+    bool setModemConfig(const String &param, const String &value);
+
+    // Modem Identification
+    String getIMEI();
+    String getManufacturerIdentification();
+    String getModelIdentification();
+    String getFirmwareRevision();
+    String getIMSI();
+    String getICCID();
+    String getPinRetries();
+
+    // Hardware
+    String getWifiScan();
+
   private:
     Stream *_serial;
     Stream *_debugSerial;
