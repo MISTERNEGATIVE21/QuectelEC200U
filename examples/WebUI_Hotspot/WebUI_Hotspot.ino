@@ -23,13 +23,18 @@
 
 #include <WiFi.h>
 #include <WebServer.h>
+#include <DNSServer.h>
+#include <Preferences.h>
 #include <ArduinoJson.h>
 #include <QuectelEC200U.h>
 #include "index_html.h"
 
 // --- Configuration ---
-const char* ssid = "Quectel_Manager";
-const char* password = "password";
+// --- Configuration ---
+const char* ap_ssid = "Quectel_Manager";
+const char* ap_password = "password";
+
+Preferences preferences;
 
 // Modem Pins (Adjust for your board)
 #define RX_PIN 16
@@ -42,6 +47,7 @@ QuectelEC200U modem(modemSerial, 115200, RX_PIN, TX_PIN);
 
 // Web Server on port 80
 WebServer server(80);
+DNSServer dnsServer;
 
 // Global variables
 int currentSocketId = -1;
@@ -61,6 +67,11 @@ void handleOptions() {
 
 void handleRoot() {
   server.send(200, "text/html", index_html);
+}
+
+void handleNotFound() {
+  server.sendHeader("Location", "/", true);
+  server.send(302, "text/plain", "");
 }
 
 void handleStatus() {
@@ -261,19 +272,87 @@ void handleTcpSend() {
   server.send(200, "application/json", response);
 }
 
+void handleWifiSave() {
+  sendCorsHeaders();
+  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
+  
+  JsonDocument doc;
+  deserializeJson(doc, server.arg("plain"));
+  String ssid = doc["ssid"];
+  String pass = doc["pass"];
+  
+  if (ssid.length() > 0) {
+    preferences.begin("wifi", false);
+    preferences.putString("ssid", ssid);
+    preferences.putString("pass", pass);
+    preferences.end();
+    
+    server.send(200, "application/json", "{\"success\":true, \"message\":\"Saved. Rebooting...\"}");
+    delay(1000);
+    ESP.restart();
+  } else {
+    server.send(400, "application/json", "{\"success\":false, \"message\":\"Invalid SSID\"}");
+  }
+}
+
+void handleWifiForget() {
+  sendCorsHeaders();
+  preferences.begin("wifi", false);
+  preferences.clear();
+  preferences.end();
+  
+  server.send(200, "application/json", "{\"success\":true, \"message\":\"Forgot. Rebooting...\"}");
+  delay(1000);
+  ESP.restart();
+}
+
 void setup() {
   Serial.begin(115200);
   
   // Init Modem
   Serial.println("Initializing Modem...");
+  modem.powerOn(POWER_PIN);
   modem.begin();
   
-  // Init WiFi AP
-  Serial.println("Starting WiFi Hotspot...");
-  WiFi.softAP(ssid, password);
-  IPAddress IP = WiFi.softAPIP();
-  Serial.print("AP IP address: ");
-  Serial.println(IP);
+  // WiFi Setup
+  preferences.begin("wifi", true);
+  String ssid = preferences.getString("ssid", "");
+  String pass = preferences.getString("pass", "");
+  preferences.end();
+  
+  bool connected = false;
+  if (ssid.length() > 0) {
+    Serial.print("Connecting to WiFi: ");
+    Serial.println(ssid);
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(ssid.c_str(), pass.c_str());
+    
+    // Wait up to 10s
+    for (int i = 0; i < 20; i++) {
+      if (WiFi.status() == WL_CONNECTED) {
+        connected = true;
+        break;
+      }
+      delay(500);
+      Serial.print(".");
+    }
+    Serial.println();
+  }
+  
+  if (connected) {
+    Serial.print("Connected! IP: ");
+    Serial.println(WiFi.localIP());
+  } else {
+    Serial.println("Starting WiFi Hotspot...");
+    WiFi.mode(WIFI_AP);
+    WiFi.softAP(ap_ssid, ap_password);
+    IPAddress IP = WiFi.softAPIP();
+    Serial.print("AP IP address: ");
+    Serial.println(IP);
+    
+    // Start DNS Server for Captive Portal (only in AP mode)
+    dnsServer.start(53, "*", IP);
+  }
   
   // Setup Web Server Routes
   server.on("/", handleRoot);
@@ -287,6 +366,8 @@ void setup() {
   server.on("/api/tcp/open", handleTcpOpen);
   server.on("/api/tcp/close", handleTcpClose);
   server.on("/api/tcp/send", handleTcpSend);
+  server.on("/api/wifi/save", handleWifiSave);
+  server.on("/api/wifi/forget", handleWifiForget);
   
   // Handle OPTIONS for CORS
   server.on("/api/status", HTTP_OPTIONS, handleOptions);
@@ -295,12 +376,17 @@ void setup() {
   server.on("/api/at", HTTP_OPTIONS, handleOptions);
   server.on("/api/tcp/open", HTTP_OPTIONS, handleOptions);
   server.on("/api/tcp/send", HTTP_OPTIONS, handleOptions);
+  server.on("/api/wifi/save", HTTP_OPTIONS, handleOptions);
+  server.on("/api/wifi/forget", HTTP_OPTIONS, handleOptions);
+  
+  server.onNotFound(handleNotFound);
 
   server.begin();
   Serial.println("Web Server started");
 }
 
 void loop() {
+  dnsServer.processNextRequest();
   server.handleClient();
   // Add any non-blocking modem maintenance here if needed
 }
