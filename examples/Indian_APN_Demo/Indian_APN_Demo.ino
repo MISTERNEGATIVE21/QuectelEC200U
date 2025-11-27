@@ -7,36 +7,36 @@
 
 #include <QuectelEC200U.h>
 
-// For ESP32, you can use HardwareSerial
+// Pin Definitions
+#define EC200U_RX_PIN 16
+#define EC200U_TX_PIN 17
+#define EC200U_PW_KEY_PIN 10
+
 #if defined(ARDUINO_ARCH_ESP32)
- // Use Serial1, Serial2, etc. as available
+  HardwareSerial& SerialAT = Serial1;
+  QuectelEC200U modem(SerialAT, 115200, EC200U_RX_PIN, EC200U_TX_PIN);
 #else
-// For other boards, you might need SoftwareSerial
-#include <SoftwareSerial.h>
-SoftwareSerial SerialAT(7, 8); // RX, TX
+  #include <SoftwareSerial.h>
+  SoftwareSerial SerialAT(7, 8); // RX, TX
+  QuectelEC200U modem(SerialAT);
 #endif
 
-// APN settings for common Indian carriers
-const char* JIO_APN = "jionet";
-const char* AIRTEL_APN = "airtelgprs.com";
-const char* VI_APN = "www";
-const char* BSNL_APN = "bsnlnet";
+// Power on the modem (one-time operation)
+void EC200U_powerOn() {
+#if defined(ARDUINO_ARCH_ESP32)
+  pinMode(EC200U_PW_KEY_PIN, OUTPUT);
+  digitalWrite(EC200U_PW_KEY_PIN, LOW);
+  delay(2000); // Wait for modem to power on
+#endif
+}
 
 void setup() {
   Serial.begin(115200);
-#if defined(ARDUINO_ARCH_ESP32)
-  
-#if defined(ARDUINO_ARCH_ESP32)
-  HardwareSerial& SerialAT = Serial1;
-#else
-  #include <SoftwareSerial.h>
-  SoftwareSerial SerialAT(10, 11);
-#endif
-QuectelEC200U modem(SerialAT);
-#else
-  QuectelEC200U modem(SerialAT);
-#endif
-  SerialAT.begin(115200); // Or your desired baud rate
+  #if defined(ARDUINO_ARCH_ESP32)
+    EC200U_powerOn();
+  #else
+    SerialAT.begin(9600);
+  #endif
 
   Serial.println("Initializing modem...");
   if (modem.begin()) {

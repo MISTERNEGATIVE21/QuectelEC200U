@@ -43,22 +43,6 @@ bool terminalActive = true;
 // Power on the modem (one-time operation)
 void powerOnModem() {
 #if defined(ARDUINO_ARCH_ESP32)
-  pinMode(EC200U_PW_KEY_PIN, OUTPUT);
-  pinMode(EC200U_STATUS_PIN, INPUT);
-
-  // Check if modem is already on
-  if (digitalRead(EC200U_STATUS_PIN) == LOW) {
-    Serial.println(F("Powering on modem..."));
-    digitalWrite(EC200U_PW_KEY_PIN, LOW);
-    delay(500);
-    digitalWrite(EC200U_PW_KEY_PIN, HIGH);
-    delay(3000);  // Wait for modem to power on
-    Serial.println(F("✓ Modem powered on"));
-  } else {
-    Serial.println(F("✓ Modem already powered on"));
-  }
-#else
-  Serial.println(F("⚠ Manual power-on required for non-ESP32 boards"));
 #endif
 }
 

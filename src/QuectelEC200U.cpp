@@ -1749,6 +1749,12 @@ bool QuectelEC200U::setPacketDomainEventReporting(int mode) {
     return sendAT("AT+CGEREP=" + String(mode));
 }
 
+// Hardware
+String QuectelEC200U::getWifiScan() {
+    _serial->println(F("AT+QWIFI=1")); // Assuming AT+QWIFI=1 triggers scan
+    return readResponse(5000);
+}
+
 // ===== Supplementary Service Commands =====
 bool QuectelEC200U::setCallForwarding(int reason, int mode, const String &number, int time) {
     return sendAT("AT+CCFC=" + String(reason) + "," + String(mode) + ",\"" + number + "\"," + String(time));

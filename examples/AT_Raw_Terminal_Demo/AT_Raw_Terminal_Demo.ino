@@ -54,10 +54,9 @@ void EC200U_powerOn() {
   // Check if the modem is already on
   if (digitalRead(EC200U_STATUS_PIN) == LOW) {
     // Power on the modem
+    // Power on the modem
     digitalWrite(EC200U_PW_KEY_PIN, LOW);
-    delay(500);
-    digitalWrite(EC200U_PW_KEY_PIN, HIGH);
-    delay(3000);
+    delay(2000);
   }
 }
 #endif

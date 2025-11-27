@@ -29,22 +29,6 @@ void EC200U_powerOn() {
   pinMode(EC200U_STATUS_PIN, INPUT);
 
   // Check if the modem is already on
-  int statusPin = digitalRead(EC200U_STATUS_PIN);
-  Serial.print("Modem STATUS pin: ");
-  Serial.println(statusPin);
-  
-  if (statusPin == LOW) {
-    Serial.println("Powering on modem...");
-    // Power on the modem
-    digitalWrite(EC200U_PW_KEY_PIN, LOW);
-    delay(500);
-    digitalWrite(EC200U_PW_KEY_PIN, HIGH);
-    delay(3000);
-    Serial.println("Modem power-on sequence completed");
-  } else {
-    Serial.println("Modem appears to be already powered on");
-  }
-}
 #else
 #include <SoftwareSerial.h>
 SoftwareSerial SerialAT(EC200U_RX_PIN, EC200U_TX_PIN);

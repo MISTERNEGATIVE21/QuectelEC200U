@@ -15,22 +15,6 @@
 
 
 void EC200U_powerOn() {
-  pinMode(EC200U_PW_KEY_PIN, OUTPUT);
-  pinMode(EC200U_STATUS_PIN, INPUT);
-
-  // Check if the modem is already on
-  if (digitalRead(EC200U_STATUS_PIN) == LOW) {
-    // Power on the modem
-    digitalWrite(EC200U_PW_KEY_PIN, LOW);
-    delay(500);
-    digitalWrite(EC200U_PW_KEY_PIN, HIGH);
-    delay(3000);
-  }
-}
-#else
-#include <SoftwareSerial.h>
-SoftwareSerial SerialAT(EC200U_RX_PIN, EC200U_TX_PIN);
-#endif
 
 const char* cert_path = "https_ca.pem";
 
