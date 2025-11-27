@@ -60,13 +60,6 @@ enum class ErrorCode {
 
 class QuectelEC200U {
   public:
-    // HardwareSerial constructor (auto-configure on begin). On ESP32, optional RX/TX pins are supported.
-    bool isInitialized() const { return _initialized; }
-    bool isNetworkReady() const { return _networkRegistered; }
-    void setState(ModemState state) { _state = state; }
-
-    // Core utilities
-    String getIMEI();
     int getSignalStrength();
     bool setAPN(const char* apn);
     String getModemInfo();
@@ -299,18 +292,6 @@ class QuectelEC200U {
     // Asynchronous PDP Context
     bool activatePDPAsync(int ctxId = 1);
     bool deactivatePDPAsync(int ctxId = 1);
-    
-    // Context Configuration
-    bool configureContext(int ctxId, int type, const String &apn, const String &user, const String &pass, int auth);
-
-    // General Modem Configuration
-    bool setModemConfig(const String &param, const String &value);
-
-
-    
-    
-    
-    
     
     
     
