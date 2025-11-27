@@ -12,8 +12,12 @@ const char index_html[] PROGMEM = R"rawliteral(
     <style>
         :root {
             --bg-color: #0f172a;
-            --text-color: #e2e8f0;
+            --card-bg: rgba(30, 41, 59, 0.6);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
             --accent-color: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.3);
             --success-color: #4ade80;
             --error-color: #f87171;
             --font-main: 'Inter', sans-serif;
