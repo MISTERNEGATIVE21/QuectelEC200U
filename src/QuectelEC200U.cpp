@@ -113,23 +113,32 @@ bool QuectelEC200U::begin(bool forceReinit) {
 }
 
 bool QuectelEC200U::initializeModem() {
-  logDebug(F("Testing modem responsiveness..."));
+  logDebug(F("Starting AT SYNC..."));
 
-  // Test modem responsiveness
-  for (int i = 0; i < 5; i++) {
+  // 1. Start AT SYNC: Send AT every 500ms, up to 10 times
+  bool syncSuccess = false;
+  for (int i = 0; i < 10; i++) {
     if (sendAT(F("AT"), F("OK"), 500)) {
-      logDebug(F("Modem is responsive"));
+      syncSuccess = true;
+      logDebug(F("SYNC success"));
       break;
-    }
-    if (i == 4) {
-      logError(F("Modem not responding"));
-      _lastError = ErrorCode::MODEM_NOT_RESPONDING;
-      return false;
     }
     delay(500);
   }
 
-  // Disable echo (only once)
+  if (!syncSuccess) {
+    logError(F("SYNC fail"));
+    _lastError = ErrorCode::MODEM_NOT_RESPONDING;
+    return false;
+  }
+
+  // 2. ATI - Module Info
+  sendAT(F("ATI"));
+
+  // 3. ATV1 - Verbose response format
+  sendAT(F("ATV1"), F("OK"));
+
+  // 4. ATE0 - Disable Echo (Library requires this for parsing, despite user log showing ATE1)
   if (!_echoDisabled) {
     if (sendAT(F("ATE0"), F("OK"), 1000)) {
       _echoDisabled = true;
@@ -137,8 +146,32 @@ bool QuectelEC200U::initializeModem() {
     }
   }
 
-  // Enable verbose errors
-  sendAT(F("AT+CMEE=2"), F("OK"), 1000);
+  // 5. AT+CMEE=2 - Verbose errors
+  sendAT(F("AT+CMEE=2"), F("OK"));
+
+  // 6. AT+IPR? - Baudrate
+  sendAT(F("AT+IPR?"));
+
+  // 7. AT+GSN - IMEI
+  sendAT(F("AT+GSN"));
+
+  // 8. AT+CPIN? - SIM Status
+  sendAT(F("AT+CPIN?"));
+
+  // 9. AT+CIMI - IMSI
+  sendAT(F("AT+CIMI"));
+
+  // 10. AT+QCCID - ICCID
+  sendAT(F("AT+QCCID"));
+
+  // 11. AT+CSQ - Signal Quality
+  sendAT(F("AT+CSQ"));
+
+  // 12. Network Registration Status
+  sendAT(F("AT+CREG?"));
+  sendAT(F("AT+CGREG?"));
+  sendAT(F("AT+COPS?"));
+  sendAT(F("AT+CEREG?"));
 
   // Check SIM (only once per session)
   if (!_simChecked) {
@@ -179,6 +212,15 @@ void QuectelEC200U::updateNetworkStatus() {
   if (_networkRegistered) {
     _state = MODEM_NETWORK_CONNECTED;
   }
+}
+
+// Send AT command without waiting for response (for manual handling)
+void QuectelEC200U::sendATRaw(const String &cmd) {
+  if (_debugSerial) {
+    _debugSerial->print(F("CMD (Raw): "));
+    _debugSerial->println(cmd);
+  }
+  _serial->println(cmd);
 }
 
 // Inspired by simple AT command approach - clean and efficient

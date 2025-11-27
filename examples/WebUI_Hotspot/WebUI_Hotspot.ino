@@ -194,7 +194,7 @@ void handleAT() {
   deserializeJson(doc, server.arg("plain"));
   String cmd = doc["cmd"];
   
-  modem.sendAT(cmd);
+  modem.sendATRaw(cmd);
   String resp = modem.readResponse(5000); // Wait up to 5s
   
   JsonDocument res;

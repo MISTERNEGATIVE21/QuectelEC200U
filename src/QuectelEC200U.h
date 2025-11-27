@@ -61,18 +61,6 @@ enum class ErrorCode {
 class QuectelEC200U {
   public:
     // HardwareSerial constructor (auto-configure on begin). On ESP32, optional RX/TX pins are supported.
-    QuectelEC200U(HardwareSerial &serial, uint32_t baud = 115200, int8_t rxPin = -1, int8_t txPin = -1);
-    // Generic Stream constructor (e.g., SoftwareSerial, USB CDC). Stream must be pre-begun by the caller.
-    QuectelEC200U(Stream &stream);
-
-    bool begin(bool forceReinit = false);
-    void enableDebug(Stream &debugStream);
-    bool sendAT(const String &cmd, const String &expect = "OK", uint32_t timeout = 3000);
-    [[deprecated("Use readResponse(char*, size_t, uint32_t) instead")]] String readResponse(uint32_t timeout);
-    int readResponse(char* buffer, size_t length, uint32_t timeout);
-
-    // State management
-    ModemState getState() const { return _state; }
     bool isInitialized() const { return _initialized; }
     bool isNetworkReady() const { return _networkRegistered; }
     void setState(ModemState state) { _state = state; }
