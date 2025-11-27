@@ -1,0 +1,306 @@
+/*
+  WebUI Hotspot Example for Quectel EC200U
+  
+  This example turns the ESP32 into a standalone Wi-Fi Hotspot with a beautiful Web UI
+  to control the Quectel EC200U modem.
+  
+  Features:
+  - Dashboard with Signal, Operator, and Network status
+  - SMS Send/Receive
+  - GPS Location
+  - Voice Call Dialer
+  - AT Command Terminal
+  - TCP Test Tool
+  
+  Hardware:
+  - ESP32 Board
+  - Quectel EC200U Module connected via UART
+  
+  Dependencies:
+  - ArduinoJson
+  - QuectelEC200U
+*/
+
+#include <WiFi.h>
+#include <WebServer.h>
+#include <ArduinoJson.h>
+#include <QuectelEC200U.h>
+#include "index_html.h"
+
+// --- Configuration ---
+const char* ssid = "Quectel_Manager";
+const char* password = "password";
+
+// Modem Pins (Adjust for your board)
+#define RX_PIN 16
+#define TX_PIN 17
+#define POWER_PIN 23 // Optional power pin
+
+// Initialize Modem
+HardwareSerial modemSerial(1);
+QuectelEC200U modem(modemSerial, 115200, RX_PIN, TX_PIN);
+
+// Web Server on port 80
+WebServer server(80);
+
+// Global variables
+int currentSocketId = -1;
+
+// --- Helper Functions ---
+
+void sendCorsHeaders() {
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.sendHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+  server.sendHeader("Access-Control-Allow-Headers", "Content-Type");
+}
+
+void handleOptions() {
+  sendCorsHeaders();
+  server.send(204);
+}
+
+void handleRoot() {
+  server.send(200, "text/html", index_html);
+}
+
+void handleStatus() {
+  sendCorsHeaders();
+  JsonDocument doc;
+  
+  doc["signal"] = modem.getSignalStrength();
+  doc["operator"] = modem.getOperator();
+  doc["net_type"] = modem.getRegistrationStatus() == 1 || modem.getRegistrationStatus() == 5 ? "Registered" : "Searching";
+  doc["sim_status"] = modem.getSIMStatus();
+  doc["imei"] = modem.getIMEI();
+  doc["model"] = modem.getModelIdentification();
+  
+  String response;
+  serializeJson(doc, response);
+  server.send(200, "application/json", response);
+}
+
+void handleSmsSend() {
+  sendCorsHeaders();
+  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
+  
+  JsonDocument doc;
+  deserializeJson(doc, server.arg("plain"));
+  
+  const char* number = doc["number"];
+  const char* text = doc["text"];
+  
+  bool success = modem.sendSMS(number, text);
+  
+  JsonDocument res;
+  res["success"] = success;
+  String response;
+  serializeJson(res, response);
+  server.send(200, "application/json", response);
+}
+
+void handleSmsRead() {
+  sendCorsHeaders();
+  int index = server.arg("index").toInt();
+  
+  String msg = modem.readSMS(index);
+  
+  JsonDocument res;
+  res["success"] = msg.length() > 0;
+  res["message"] = msg;
+  
+  String response;
+  serializeJson(res, response);
+  server.send(200, "application/json", response);
+}
+
+void handleGpsLocation() {
+  sendCorsHeaders();
+  
+  // Ensure GNSS is on
+  if (!modem.isGNSSOn()) {
+    modem.startGNSS();
+  }
+  
+  String loc = modem.getGNSSLocation();
+  // Format: <latitude>,<longitude>,...
+  // We need to parse this simple string or just return it
+  // For better JSON, let's try to parse if possible, or just send raw
+  
+  JsonDocument res;
+  if (loc.length() > 0) {
+    res["success"] = true;
+    int firstComma = loc.indexOf(',');
+    int secondComma = loc.indexOf(',', firstComma + 1);
+    if (firstComma > 0) {
+        res["lat"] = loc.substring(0, firstComma);
+        res["lon"] = loc.substring(firstComma + 1, secondComma > 0 ? secondComma : loc.length());
+    } else {
+        res["lat"] = loc;
+        res["lon"] = "";
+    }
+  } else {
+    res["success"] = false;
+  }
+  
+  String response;
+  serializeJson(res, response);
+  server.send(200, "application/json", response);
+}
+
+void handleCallDial() {
+  sendCorsHeaders();
+  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
+  
+  JsonDocument doc;
+  deserializeJson(doc, server.arg("plain"));
+  const char* number = doc["number"];
+  
+  bool success = modem.dial(number);
+  
+  JsonDocument res;
+  res["success"] = success;
+  String response;
+  serializeJson(res, response);
+  server.send(200, "application/json", response);
+}
+
+void handleCallHangup() {
+  sendCorsHeaders();
+  bool success = modem.hangup();
+  
+  JsonDocument res;
+  res["success"] = success;
+  String response;
+  serializeJson(res, response);
+  server.send(200, "application/json", response);
+}
+
+void handleAT() {
+  sendCorsHeaders();
+  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
+  
+  JsonDocument doc;
+  deserializeJson(doc, server.arg("plain"));
+  String cmd = doc["cmd"];
+  
+  modem.sendAT(cmd);
+  String resp = modem.readResponse(5000); // Wait up to 5s
+  
+  JsonDocument res;
+  res["response"] = resp;
+  String response;
+  serializeJson(res, response);
+  server.send(200, "application/json", response);
+}
+
+void handleTcpOpen() {
+  sendCorsHeaders();
+  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
+  
+  JsonDocument doc;
+  deserializeJson(doc, server.arg("plain"));
+  String host = doc["host"];
+  int port = doc["port"];
+  
+  // Ensure context is active
+  modem.configureContext(1, 1, "internet", "", "", 0);
+  modem.activatePDP(1);
+  
+  int socketId = modem.tcpOpen(host, port);
+  currentSocketId = socketId;
+  
+  JsonDocument res;
+  res["success"] = (socketId != -1);
+  res["socketId"] = socketId;
+  
+  String response;
+  serializeJson(res, response);
+  server.send(200, "application/json", response);
+}
+
+void handleTcpClose() {
+  sendCorsHeaders();
+  bool success = false;
+  if (currentSocketId != -1) {
+    success = modem.tcpClose(currentSocketId);
+    currentSocketId = -1;
+  }
+  
+  JsonDocument res;
+  res["success"] = success;
+  String response;
+  serializeJson(res, response);
+  server.send(200, "application/json", response);
+}
+
+void handleTcpSend() {
+  sendCorsHeaders();
+  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
+  
+  JsonDocument doc;
+  deserializeJson(doc, server.arg("plain"));
+  String data = doc["data"];
+  
+  bool success = false;
+  String tcpResponse = "";
+  
+  if (currentSocketId != -1) {
+    success = modem.tcpSend(currentSocketId, data);
+    if (success) {
+        // Try to read response
+        modem.tcpRecv(currentSocketId, tcpResponse, 1024, 3000);
+    }
+  }
+  
+  JsonDocument res;
+  res["success"] = success;
+  res["response"] = tcpResponse;
+  
+  String response;
+  serializeJson(res, response);
+  server.send(200, "application/json", response);
+}
+
+void setup() {
+  Serial.begin(115200);
+  
+  // Init Modem
+  Serial.println("Initializing Modem...");
+  modem.begin();
+  
+  // Init WiFi AP
+  Serial.println("Starting WiFi Hotspot...");
+  WiFi.softAP(ssid, password);
+  IPAddress IP = WiFi.softAPIP();
+  Serial.print("AP IP address: ");
+  Serial.println(IP);
+  
+  // Setup Web Server Routes
+  server.on("/", handleRoot);
+  server.on("/api/status", handleStatus);
+  server.on("/api/sms/send", handleSmsSend);
+  server.on("/api/sms/read", handleSmsRead);
+  server.on("/api/gps/location", handleGpsLocation);
+  server.on("/api/call/dial", handleCallDial);
+  server.on("/api/call/hangup", handleCallHangup);
+  server.on("/api/at", handleAT);
+  server.on("/api/tcp/open", handleTcpOpen);
+  server.on("/api/tcp/close", handleTcpClose);
+  server.on("/api/tcp/send", handleTcpSend);
+  
+  // Handle OPTIONS for CORS
+  server.on("/api/status", HTTP_OPTIONS, handleOptions);
+  server.on("/api/sms/send", HTTP_OPTIONS, handleOptions);
+  server.on("/api/call/dial", HTTP_OPTIONS, handleOptions);
+  server.on("/api/at", HTTP_OPTIONS, handleOptions);
+  server.on("/api/tcp/open", HTTP_OPTIONS, handleOptions);
+  server.on("/api/tcp/send", HTTP_OPTIONS, handleOptions);
+
+  server.begin();
+  Serial.println("Web Server started");
+}
+
+void loop() {
+  server.handleClient();
+  // Add any non-blocking modem maintenance here if needed
+}

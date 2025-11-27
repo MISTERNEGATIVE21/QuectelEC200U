@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.7.0 - 2025-11-27
+- New Example: `WebUI_Hotspot` - A standalone ESP32 Wi-Fi Hotspot with a premium Web UI to control the modem (SMS, GPS, Calls, AT, TCP).
+- Web UI features: Glassmorphism design, Dashboard, SMS Manager, GPS Tracker, Phone Dialer, Terminal.
+
 ## 1.6.0 - 2025-11-12
 - ESP32 standardization: Fixes for terminal aand sending messages
 ## 1.5.0 - 2025-09-30
