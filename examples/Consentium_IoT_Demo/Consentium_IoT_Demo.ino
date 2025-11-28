@@ -1,260 +1,313 @@
 #include <QuectelEC200U.h>
 #include <ArduinoJson.h>
-#include "ca_cert.h"
+#include <pgmspace.h>
 
-// Set the EC200U modem RX and TX pins
+static const char consentiumiot_ca_cert[] PROGMEM = R"EOF(-----BEGIN CERTIFICATE-----
+MIIDtzCCA1ygAwIBAgIRAI+LGiSVq2mrEwvoGRl4oJwwCgYIKoZIzj0EAwIwOzEL
+MAkGA1UEBhMCVVMxHjAcBgNVBAoTFUdvb2dsZSBUcnVzdCBTZXJ2aWNlczEMMAoG
+A1UEAxMDV0UxMB4XDTI1MTExMDIzNDIxMFoXDTI2MDIwOTAwMzk0OFowHDEaMBgG
+A1UEAxMRY29uc2VudGl1bWlvdC5jb20wWTATBgcqhkjOPQIBBggqhkjOPQMBBwNC
+AARi4qsxF4Kibh+cPlBF25WrkTB8gM85+aPLN4zC87BNq6Cbv0RJpqsMDT8034Lr
+aOsS8MAsLQEeynDjvYUy8UUJo4ICXjCCAlowDgYDVR0PAQH/BAQDAgeAMBMGA1Ud
+JQQMMAoGCCsGAQUFBwMBMAwGA1UdEwEB/wQCMAAwHQYDVR0OBBYEFLXG4ftzbPsq
+um/EqZ18caniZ++vMB8GA1UdIwQYMBaAFJB3kjVnxP+ozKnme9mAeXvMk/k4MF4G
+CCsGAQUFBwEBBFIwUDAnBggrBgEFBQcwAYYbaHR0cDovL28ucGtpLmdvb2cvcy93
+ZTEvajRzMCUGCCsGAQUFBzAChhlodHRwOi8vaS5wa2kuZ29vZy93ZTEuY3J0MDEG
+A1UdEQQqMCiCEWNvbnNlbnRpdW1pb3QuY29tghMqLmNvbnNlbnRpdW1pb3QuY29t
+MBMGA1UdIAQMMAowCAYGZ4EMAQIBMDYGA1UdHwQvMC0wK6ApoCeGJWh0dHA6Ly9j
+LnBraS5nb29nL3dlMS9raEU0el9nN0xHOC5jcmwwggEDBgorBgEEAdZ5AgQCBIH0
+BIHxAO8AdQCWl2S/VViXrfdDh2g3CEJ36fA61fak8zZuRqQ/D8qpxgAAAZpwXPKU
+AAAEAwBGMEQCIE4ItioUtrCr0IevZGUOFrIvJp6wlUWmEDm5iWmTDROWAiBq/BV4
+dTZuz4VYj2uWE9oQerTYBJzD6EBEz3husjDHPQB2ABmG1Mcoqm/+ugNveCpNAZGq
+zi1yMQ+uzl1wQS0lTMfUAAABmnBc8mYAAAQDAEcwRQIgZ1Zq6WplL83tfqDIOLni
+3+16kvFxNnPY3KB/Bu1ug3cCIQD0Jshk/5jYwZA1k24oRP7yhM1UMp5fwTlP593N
+JUxDrDAKBggqhkjOPQQDAgNJADBGAiEA3WUakYAt1OgKmik8ANqfh0Y4jBuIffS6
+jgsgIVYrOxECIQCEri3dzlwRadQgtD7AzxLizE+rZbUwfBYOmIA+6kqtRw==
+-----END CERTIFICATE-----
+)EOF";
+
 #define EC200U_RX_PIN 16
 #define EC200U_TX_PIN 17
-
-// Set the EC200U modem power key pin
-#define EC200U_PW_KEY_PIN 10
-
-// Set the EC200U modem power status pin
+#define EC200U_PWRKEY_PIN 10
 #define EC200U_STATUS_PIN 2
 
 #if defined(ARDUINO_ARCH_ESP32)
-
-
-#if defined(ARDUINO_ARCH_ESP32)
-  HardwareSerial& SerialAT = Serial1;
-#else
-  #include <SoftwareSerial.h>
-  SoftwareSerial SerialAT(10, 11);
-#endif
+HardwareSerial SerialAT(2);
 QuectelEC200U modem(SerialAT, 115200, EC200U_RX_PIN, EC200U_TX_PIN);
-
-void EC200U_powerOn() {
-  Serial.println("Setting up power pins...");
-  pinMode(EC200U_PW_KEY_PIN, OUTPUT);
-  pinMode(EC200U_STATUS_PIN, INPUT);
-
-  // Check if the modem is already on
 #else
 #include <SoftwareSerial.h>
 SoftwareSerial SerialAT(EC200U_RX_PIN, EC200U_TX_PIN);
 QuectelEC200U modem(SerialAT);
 #endif
 
-// Consentium IoT API credentials
-const char* sendKey = "<YOUR-SEND-KEY>";
-const char* boardKey = "<YOUR-BOARD-KEY>";
-const char* apn = "your.apn"; // Your mobile network operator's APN
+// --- Consentium IoT Configuration ---
+static const char SEND_KEY[] = "<YOUR-SEND-KEY>";
+static const char RECEIVE_KEY[] = "<YOUR-RECEIVE-KEY>";
+static const char BOARD_KEY[] = "<YOUR-BOARD-KEY>";
+static const char APN[] = "your.apn";
+static const char APN_USER[] = "";
+static const char APN_PASS[] = "";
+static const int PDP_CONTEXT_ID = 1;
+static const int SSL_CTX_ID = 1;
+static const unsigned long SEND_INTERVAL_MS = 60000;
+static const char CERT_PATH[] = "consentium_ca.pem";
+static const bool FETCH_RECENTS_AFTER_SEND = true;
 
-// Sensor data (up to 5 sensors)
-// Leave info and data empty for unused sensors
-const char* sensor1_info = "Temperature";
-const char* sensor1_data = "25.50";
-const char* sensor2_info = "Humidity";
-const char* sensor2_data = "60.00";
-const char* sensor3_info = "";
-const char* sensor3_data = "";
-const char* sensor4_info = "";
-const char* sensor4_data = "";
-const char* sensor5_info = "";
-const char* sensor5_data = "";
+struct SensorEntry {
+  const char *info;
+  const char *data;
+};
 
-const char* cert_path = "consentium_ca.pem";
+static const SensorEntry SENSORS[] = {
+  {"Temperature", "25.50"},
+  {"Humidity", "60.00"},
+  {"", ""},
+  {"", ""},
+  {"", ""}
+};
 
-void sendData() {
-  // Construct the JSON payload dynamically using ArduinoJson
-  Serial.println();
-  Serial.println("Constructing JSON payload...");
-  
-  StaticJsonDocument<512> doc; // Adjust size as needed
+static unsigned long lastSend = 0;
 
-  JsonArray sensorDataArray = doc["sensors"]["sensorData"].to<JsonArray>();
-
-  int sensorCount = 0;
-  if (String(sensor1_info) != "") {
-    JsonObject sensor1 = sensorDataArray.add<JsonObject>();
-    sensor1["info"] = sensor1_info;
-    sensor1["data"] = sensor1_data;
-    sensorCount++;
+#if defined(ARDUINO_ARCH_ESP32)
+static void powerOnModem() {
+  pinMode(EC200U_PWRKEY_PIN, OUTPUT);
+  pinMode(EC200U_STATUS_PIN, INPUT);
+  if (digitalRead(EC200U_STATUS_PIN) == LOW) {
+    digitalWrite(EC200U_PWRKEY_PIN, LOW);
+    delay(2000);
+    digitalWrite(EC200U_PWRKEY_PIN, HIGH);
+    delay(200);
   }
-  if (String(sensor2_info) != "") {
-    JsonObject sensor2 = sensorDataArray.add<JsonObject>();
-    sensor2["info"] = sensor2_info;
-    sensor2["data"] = sensor2_data;
-    sensorCount++;
+}
+#else
+static void powerOnModem() {}
+#endif
+
+static void haltForever(const __FlashStringHelper *reason) {
+  Serial.println(reason);
+  while (true) {
+    delay(1000);
   }
-  if (String(sensor3_info) != "") {
-    JsonObject sensor3 = sensorDataArray.add<JsonObject>();
-    sensor3["info"] = sensor3_info;
-    sensor3["data"] = sensor3_data;
-    sensorCount++;
+}
+
+static void requireStep(bool ok, const __FlashStringHelper *label) {
+  if (ok) {
+    Serial.print(F("[ OK ] "));
+    Serial.println(label);
+  } else {
+    Serial.print(F("[FAIL] "));
+    Serial.println(label);
+    Serial.print(F("Reason: "));
+    Serial.println(modem.getLastErrorString());
+    haltForever(F("Stopping demo"));
   }
-  if (String(sensor4_info) != "") {
-    JsonObject sensor4 = sensorDataArray.add<JsonObject>();
-    sensor4["info"] = sensor4_info;
-    sensor4["data"] = sensor4_data;
-    sensorCount++;
+}
+
+static String buildConsentiumUrl() {
+  String url = F("https://api.consentiumiot.com/v2/updateData?sendKey=");
+  url += SEND_KEY;
+  url += F("&boardKey=");
+  url += BOARD_KEY;
+  return url;
+}
+
+static bool hasReceiveKey() {
+  return RECEIVE_KEY[0] != '<' && strlen(RECEIVE_KEY) > 0;
+}
+
+static String buildConsentiumFetchUrl(bool recents = true, const String &fromIso = String(), const String &toIso = String()) {
+  String url = F("https://api.consentiumiot.com/getData?");
+  url += F("receiveKey=");
+  url += RECEIVE_KEY;
+  url += F("&boardKey=");
+  url += BOARD_KEY;
+  if (recents) {
+    url += F("&recents=true");
+  } else {
+    url += F("&recents=false");
+    if (fromIso.length()) {
+      url += F("&from=");
+      url += fromIso;
+    }
+    if (toIso.length()) {
+      url += F("&to=");
+      url += toIso;
+    }
   }
-  if (String(sensor5_info) != "") {
-    JsonObject sensor5 = sensorDataArray.add<JsonObject>();
-    sensor5["info"] = sensor5_info;
-    sensor5["data"] = sensor5_data;
-    sensorCount++;
+  return url;
+}
+
+static void printFeedValues(JsonObject board, JsonObject feed) {
+  Serial.println(F("Latest feed payload:"));
+  Serial.print(F("Timestamp: "));
+  Serial.println(feed["updated_at"].as<const char*>() ? feed["updated_at"].as<const char*>() : "--");
+  for (int i = 1; i <= 10; ++i) {
+    char infoKey[8];
+    snprintf(infoKey, sizeof(infoKey), "info%d", i);
+    const char *label = board[infoKey];
+    if (!label || !strlen(label)) continue;
+    char valueKey[8];
+    snprintf(valueKey, sizeof(valueKey), "value%d", i);
+    if (feed.containsKey(valueKey)) {
+      Serial.print(F("  "));
+      Serial.print(label);
+      Serial.print(F(": "));
+      Serial.println(feed[valueKey].as<String>());
+    }
+  }
+}
+
+static bool fetchConsentiumFeeds(bool recents = true, const String &fromIso = String(), const String &toIso = String()) {
+  if (!hasReceiveKey()) {
+    Serial.println(F("Receive key not configured; skipping fetch."));
+    return false;
   }
 
-  Serial.print("Added ");
-  Serial.print(sensorCount);
-  Serial.println(" sensors to payload");
+  String url = buildConsentiumFetchUrl(recents, fromIso, toIso);
+  Serial.print(F("Fetching data: "));
+  Serial.println(url);
 
+  String response;
+  bool ok = modem.httpsGet(url, response);
+  if (!ok) {
+    Serial.println(F("❌ Failed to fetch data"));
+    Serial.print(F("Error: "));
+    Serial.println(modem.getLastErrorString());
+    return false;
+  }
+
+  Serial.println(F("Server response:"));
+  Serial.println(F("--------------------------------------"));
+  Serial.println(response);
+  Serial.println(F("--------------------------------------"));
+
+  StaticJsonDocument<4096> doc;
+  DeserializationError err = deserializeJson(doc, response);
+  if (err) {
+    Serial.print(F("JSON parse error: "));
+    Serial.println(err.c_str());
+    return true; // request succeeded even if parsing failed
+  }
+
+  JsonObject board = doc["board"].as<JsonObject>();
+  JsonArray feeds = doc["feeds"].as<JsonArray>();
+  if (!feeds.isNull() && feeds.size() > 0) {
+    printFeedValues(board, feeds[0].as<JsonObject>());
+  } else {
+    Serial.println(F("No feed entries returned."));
+  }
+  return true;
+}
+
+static JsonObject addBoardInfo(StaticJsonDocument<512> &doc) {
   JsonObject boardInfo = doc["boardInfo"].to<JsonObject>();
   boardInfo["firmwareVersion"] = "1.0";
   boardInfo["architecture"] = "ESP32";
   boardInfo["statusOTA"] = false;
-  
+
 #if defined(ARDUINO_ARCH_ESP32)
-  uint64_t chipid = ESP.getEfuseMac();
+  uint64_t chipId = ESP.getEfuseMac();
   char macStr[18];
   snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X",
-           (uint8_t)(chipid >> 40), (uint8_t)(chipid >> 32),
-           (uint8_t)(chipid >> 24), (uint8_t)(chipid >> 16),
-           (uint8_t)(chipid >> 8), (uint8_t)chipid);
+           (uint8_t)(chipId >> 40), (uint8_t)(chipId >> 32),
+           (uint8_t)(chipId >> 24), (uint8_t)(chipId >> 16),
+           (uint8_t)(chipId >> 8), (uint8_t)chipId);
   boardInfo["deviceMAC"] = macStr;
 #else
   boardInfo["deviceMAC"] = "AA:BB:CC:DD:EE:FF";
 #endif
-  
-  int signal = modem.getSignalStrength();
-  boardInfo["signalStrength"] = signal;
-  
-  Serial.print("Signal strength: ");
-  Serial.println(signal);
 
-  String jsonPayload;
-  serializeJson(doc, jsonPayload);
+  int csq = modem.getSignalStrength();
+  boardInfo["signalStrength"] = csq;
+  boardInfo["timestamp"] = millis();
+  return boardInfo;
+}
 
-  // Construct the URL
-  String url = "https://api.consentiumiot.com/v2/updateData?sendKey=";
-  url += sendKey;
-  url += "&boardKey=";
-  url += boardKey;
-
-  Serial.println();
-  Serial.println("======================================");
-  Serial.println("Sending data to Consentium IoT...");
-  Serial.println("======================================");
-  Serial.print("URL: ");
-  Serial.println(url);
-  Serial.print("Payload: ");
-  Serial.println(jsonPayload);
-  Serial.println();
-  
-  String response;
-  if (modem.httpsPost(url, jsonPayload, response)) {
-    Serial.println("✓ Data sent successfully");
-    Serial.println();
-    Serial.println("Response:");
-    Serial.println("--------------------------------------");
-    Serial.println(response);
-    Serial.println("--------------------------------------");
-  } else {
-    Serial.println("❌ Failed to send data");
-    Serial.println("⚠️  Check:");
-    Serial.println("   - Internet connectivity");
-    Serial.println("   - API credentials (sendKey, boardKey)");
-    Serial.println("   - API endpoint URL");
+static size_t addSensors(StaticJsonDocument<512> &doc) {
+  JsonObject sensors = doc["sensors"].to<JsonObject>();
+  JsonArray sensorData = sensors["sensorData"].to<JsonArray>();
+  size_t count = 0;
+  for (const auto &entry : SENSORS) {
+    if (entry.info && strlen(entry.info) && entry.data && strlen(entry.data)) {
+      JsonObject sensor = sensorData.add<JsonObject>();
+      sensor["info"] = entry.info;
+      sensor["data"] = entry.data;
+      count++;
+    }
   }
+  sensors["sensorCount"] = count;
+  return count;
+}
+
+static bool sendData() {
+  StaticJsonDocument<512> doc;
+  size_t sensorCount = addSensors(doc);
+  addBoardInfo(doc);
+
+  Serial.println();
+  Serial.println(F("======================================"));
+  Serial.println(F("Sending data to Consentium IoT"));
+  Serial.println(F("======================================"));
+  Serial.print(F("Sensors in payload: "));
+  Serial.println(sensorCount);
+
+  String url = buildConsentiumUrl();
+  Serial.print(F("URL: "));
+  Serial.println(url);
+
+  String response;
+  String headers[] = { String(F("Content-Type: application/json")) };
+  bool ok = modem.httpsPost(url, doc, response, headers, 1);
+
+  if (ok) {
+    Serial.println(F("✓ Data sent successfully"));
+    Serial.println(F("Response:"));
+    Serial.println(F("--------------------------------------"));
+    Serial.println(response);
+    Serial.println(F("--------------------------------------"));
+    if (FETCH_RECENTS_AFTER_SEND && hasReceiveKey()) {
+      fetchConsentiumFeeds(true);
+    }
+  } else {
+    Serial.println(F("❌ Failed to send data"));
+    Serial.print(F("Error: "));
+    Serial.println(modem.getLastErrorString());
+  }
+  return ok;
 }
 
 void setup() {
-  // Initialize Serial Monitor with delay for stability
   Serial.begin(115200);
-  delay(2000);  // Give time for Serial Monitor to connect
-  
+  while (!Serial) {}
   Serial.println();
-  Serial.println("======================================");
-  Serial.println("  Consentium IoT Demo - Starting");
-  Serial.println("======================================");
-  Serial.println();
+  Serial.println(F("======================================"));
+  Serial.println(F("  Consentium IoT Demo"));
+  Serial.println(F("======================================"));
 
 #if defined(ARDUINO_ARCH_ESP32)
-  EC200U_powerOn();
+  SerialAT.begin(115200, SERIAL_8N1, EC200U_RX_PIN, EC200U_TX_PIN);
 #else
-  Serial.println("Initializing SoftwareSerial...");
   SerialAT.begin(9600);
 #endif
 
-  Serial.println("Enabling modem debug output...");
+  powerOnModem();
   modem.enableDebug(Serial);
 
-  Serial.println("Initializing modem (this may take 10-15 seconds)...");
-  if (!modem.begin()) {
-    Serial.println("❌ Failed to initialize modem!");
-    Serial.println("⚠️  Possible issues:");
-    Serial.println("   - Check wiring (RX/TX pins)");
-    Serial.println("   - Check modem power");
-    Serial.println("   - Check SIM card");
-    Serial.println();
-    while(1);
-  }
-  Serial.println("✓ Modem initialized successfully");
+  requireStep(modem.begin(), F("Modem ready"));
+  requireStep(modem.waitForNetwork(30000), F("Network registered"));
+  requireStep(modem.attachData(APN, APN_USER, APN_PASS), F("Data attached"));
+  requireStep(modem.activatePDP(PDP_CONTEXT_ID), F("PDP active"));
+  requireStep(modem.sslUploadCert(consentiumiot_ca_cert, CERT_PATH), F("CA uploaded"));
+  requireStep(modem.sslConfigure(SSL_CTX_ID, CERT_PATH), F("SSL context configured"));
 
-  Serial.println();
-  Serial.println("Waiting for network registration...");
-  if (!modem.waitForNetwork(30000)) {
-    Serial.println("❌ Failed to connect to network");
-    Serial.println("⚠️  Check:");
-    Serial.println("   - SIM card is inserted");
-    Serial.println("   - Network coverage in your area");
-    Serial.println("   - SIM card has active service");
-    Serial.println();
-    while(1);
-  }
-  Serial.println("✓ Network registered");
-
-  Serial.println();
-  Serial.println("Attaching to data network...");
-  if (!modem.attachData(apn)) {
-    Serial.println("❌ Failed to attach to data network");
-    Serial.println("⚠️  Check APN settings for your operator");
-    Serial.println();
-    while(1);
-  }
-  Serial.println("✓ Attached to data network");
-
-  Serial.println();
-  Serial.println("Activating PDP context...");
-  if (!modem.activatePDP()) {
-    Serial.println("❌ Failed to activate PDP context!");
-    Serial.println();
-    while(1);
-  }
-  Serial.println("✓ PDP context activated");
-
-  // Upload the CA certificate to the module's filesystem
-  Serial.println("Uploading CA certificate...");
-  if (modem.fsUpload(cert_path, cloudflare_ca_cert)) {
-    Serial.println("Certificate uploaded.");
-  } else {
-    Serial.println("Failed to upload certificate.");
-  }
-
-  // Before making an HTTPS request, you must configure the SSL context.
-  if (modem.sslConfigure(1, cert_path)) {
-    Serial.println("SSL context configured.");
-  } else {
-    Serial.println("Failed to configure SSL context.");
-  }
-  
-  Serial.println();
-  Serial.println("======================================");
-  Serial.println("  Setup completed");
-  Serial.println("======================================");
-  Serial.println();
+  lastSend = millis() - SEND_INTERVAL_MS; // trigger immediate send
 }
 
 void loop() {
-  // Send data every 60 seconds
-  static unsigned long lastSendTime = 0;
-  unsigned long currentTime = millis();
-  
-  if (currentTime - lastSendTime >= 60000) {
-    lastSendTime = currentTime;
+  unsigned long now = millis();
+  if (now - lastSend >= SEND_INTERVAL_MS) {
+    lastSend = now;
     sendData();
   }
-  
-  delay(1000);  // Check every second
+  delay(200);
 }

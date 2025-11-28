@@ -1,8 +1,8 @@
 /*
-  QuectelEC200U_Adv_CN - Arduino library for Quectel EC200U (CN-AA)
+  QuectelEC200U- Arduino library for Quectel EC200U (CN-AA)
   Author: misternegative21
   Maintainer: MisterNegative21 <misternegative21@gmail.com>
-  Repository: https://github.com/MISTERNEGATIVE21/QuectelEC200U_Adv
+  Repository: https://github.com/MISTERNEGATIVE21/QuectelEC200U
   License: MIT (see LICENSE)
 
   Quectel and EC200U are trademarks of Quectel Wireless Solutions Co., Ltd.
@@ -264,6 +264,10 @@ bool QuectelEC200U::sendAT(const String &cmd, const String &expect, uint32_t tim
   return false;
 }
 
+bool QuectelEC200U::sendAT(const String &cmd) {
+  return sendAT(cmd, F("OK"), 1000);
+}
+
 
 
 [[deprecated("Use readResponse(char*, size_t, uint32_t) instead")]] String QuectelEC200U::readResponse(uint32_t timeout) {
@@ -405,6 +409,91 @@ int QuectelEC200U::extractInteger(const char* response, const String &tag) {
   if (*start == '\0') return -1;
 
   return atoi(start);
+}
+
+String QuectelEC200U::_extractFirstLine(const String &resp) const {
+  if (resp.length() == 0) {
+    return String();
+  }
+
+  int start = 0;
+  while (start < resp.length() && (resp[start] == '\r' || resp[start] == '\n')) {
+    start++;
+  }
+
+  if (start >= resp.length()) {
+    return String();
+  }
+
+  int end = resp.indexOf('\r', start);
+  int lf = resp.indexOf('\n', start);
+  if (end == -1 || (lf != -1 && lf < end)) {
+    end = lf;
+  }
+  if (end == -1) {
+    end = resp.length();
+  }
+
+  String line = resp.substring(start, end);
+  line.trim();
+  return line;
+}
+
+String QuectelEC200U::_collectResponse(uint32_t timeout) {
+  String resp;
+  uint32_t start = millis();
+  while (millis() - start < timeout) {
+    while (_serial->available()) {
+      char c = (char)_serial->read();
+      resp += c;
+      if (_debugSerial) {
+        _debugSerial->print(c);
+      }
+    }
+
+    if (resp.indexOf(F("\r\nOK\r\n")) != -1 || resp.indexOf(F("\r\nERROR\r\n")) != -1) {
+      break;
+    }
+
+    delay(5);
+  }
+  return resp;
+}
+
+bool QuectelEC200U::_extractHttpPayload(const String &raw, String &payload) {
+  if (raw.length() == 0) {
+    payload = "";
+    return false;
+  }
+
+  if (raw.indexOf(F("ERROR")) != -1) {
+    payload = raw;
+    return false;
+  }
+
+  int marker = raw.indexOf(F("+QHTTPREAD:"));
+  if (marker == -1) {
+    payload = raw;
+    return true;
+  }
+
+  int headerEnd = raw.indexOf(F("\r\n"), marker);
+  if (headerEnd == -1) {
+    payload = raw;
+    return true;
+  }
+  int dataStart = headerEnd + 2;
+  while (dataStart < (int)raw.length() && (raw[dataStart] == '\r' || raw[dataStart] == '\n')) {
+    dataStart++;
+  }
+
+  int okIdx = raw.indexOf(F("\r\nOK"), dataStart);
+  if (okIdx == -1) {
+    okIdx = raw.length();
+  }
+
+  payload = raw.substring(dataStart, okIdx);
+  return true;
 }
 
 void QuectelEC200U::_sendHttpHeaders(String headers[], size_t header_size) {
@@ -560,24 +649,16 @@ bool QuectelEC200U::mqttDisconnect() {
 String QuectelEC200U::getIMEI() {
   _serial->println(F("AT+GSN"));
   String resp = readResponse(1000);
-  // The response is typically in the format:
-  // <IMEI>
-  // 
-  // OK
-  // We need to extract the first line.
-  int first_line_end = resp.indexOf('\r');
-  if (first_line_end != -1) {
-    String imei = resp.substring(0, first_line_end);
-    imei.trim();
-    // check if the imei is a valid number
-    for (int i = 0; i < imei.length(); i++) {
-      if (!isDigit(imei.charAt(i))) {
-        return ""; // Not a valid IMEI
-      }
-    }
-    return imei;
+  String imei = _extractFirstLine(resp);
+  if (imei.length() == 0) {
+    return "";
   }
-  return "";
+  for (int i = 0; i < imei.length(); i++) {
+    if (!isDigit(imei.charAt(i))) {
+      return "";
+    }
+  }
+  return imei;
 }
 
 int QuectelEC200U::getSignalStrength() {
@@ -881,10 +962,11 @@ bool QuectelEC200U::_sendHttpRequest(const String &url, const String &data, Stri
   }
 
   sendAT(F("AT+QHTTPREAD"));
-  response = readResponse(15000);
+  String raw = _collectResponse(30000);
+  bool ok = _extractHttpPayload(raw, response);
 
   sendAT(F("AT+QHTTPCFG=\"requestheader\",0"));
-  if (response.indexOf(F("ERROR")) != -1) {
+  if (!ok || response.indexOf(F("ERROR")) != -1) {
     _lastError = ErrorCode::HTTP_READ_FAILED;
     return false;
   }
@@ -893,8 +975,8 @@ bool QuectelEC200U::_sendHttpRequest(const String &url, const String &data, Stri
 
 // ===== TCP sockets =====
 int QuectelEC200U::tcpOpen(const String &host, int port, int ctxId, int socketId) {
-  String cmd = "AT+QIOPEN=" + String(ctxId) + "," + String(socketId) + "\"TCP\"\"" + host + "\"," + String(port) + ",0,1";
-  if (!sendAT(cmd, "OK", 5000)) return -1;
+  String cmd = "AT+QIOPEN=" + String(ctxId) + "," + String(socketId) + ",\"TCP\",\"" + host + "\"," + String(port) + ",0,1";
+  if (!sendAT(cmd, F("OK"), 5000)) return -1;
   if (!expectURC("+QIOPEN: " + String(socketId) + ",0", 15000)) return -1;
   return socketId;
 }
@@ -1324,8 +1406,38 @@ bool QuectelEC200U::setAudioInterface(const String &params) {
 
 // ===== Ping =====
 bool QuectelEC200U::ping(const String &host, int contextID, int timeout, int pingnum) {
+  String report;
+  return ping(host, report, contextID, timeout, pingnum);
+}
+
+bool QuectelEC200U::ping(const String &host, String &report, int contextID, int timeout, int pingnum) {
   String cmd = "AT+QPING=" + String(contextID) + ",\"" + host + "\"," + String(timeout) + "," + String(pingnum);
-  return sendAT(cmd, F("+QPING:"), timeout * 1000 * pingnum);
+  flushInput();
+  _serial->println(cmd);
+  String ack = readResponse(2000);
+  if (ack.indexOf(F("OK")) == -1) {
+    report = ack;
+    return false;
+  }
+
+  report = "";
+  uint32_t waitMs = (timeout * 1000 * pingnum) + 5000;
+  uint32_t start = millis();
+  while (millis() - start < waitMs) {
+    String chunk = readResponse(1000);
+    if (chunk.length() == 0) {
+      continue;
+    }
+    report += chunk;
+    if (chunk.indexOf(F("+QPING:")) != -1) {
+      // +QPING: <id>,<result>,... result 0 indicates success, >0 failure
+      if (chunk.indexOf(F(",0")) != -1 || chunk.indexOf(F("ERROR")) != -1) {
+        break;
+      }
+    }
+  }
+
+  return report.indexOf(F("+QPING:")) != -1 && report.indexOf(F("ERROR")) == -1;
 }
 
 
@@ -1476,8 +1588,18 @@ String QuectelEC200U::getBatteryCharge() {
 }
 
 String QuectelEC200U::getWifiScan() {
-    _serial->println(F("AT+QWIFISCAN"));
-    return readResponse(10000); // Wi-Fi scan can take longer
+  sendAT(F("AT+QWIFI=1"), F("OK"), 5000);
+  flushInput();
+  _serial->println(F("AT+QWIFISCAN=8"));
+  return _collectResponse(30000);
+}
+
+String QuectelEC200U::scanBluetooth() {
+  sendAT(F("AT+QBTPWR=1"), F("OK"), 2000);
+  sendAT(F("AT+QBTVIS=1,1"), F("OK"), 2000);
+  flushInput();
+  _serial->println(F("AT+QBTSCAN=8"));
+  return _collectResponse(30000);
 }
 
 // ===== Advanced TCP/IP =====
@@ -1501,17 +1623,33 @@ bool QuectelEC200U::setBand(const String &gsm_mask, const String &lte_mask) {
 // ===== Modem Identification =====
 String QuectelEC200U::getManufacturerIdentification() {
     _serial->println(F("AT+GMI"));
-    return readResponse(1000);
+  String resp = readResponse(1000);
+  return _extractFirstLine(resp);
 }
 
 String QuectelEC200U::getModelIdentification() {
     _serial->println(F("AT+GMM"));
-    return readResponse(1000);
+  return _extractFirstLine(readResponse(1000));
 }
 
 String QuectelEC200U::getFirmwareRevision() {
     _serial->println(F("AT+GMR"));
-    return readResponse(1000);
+  return _extractFirstLine(readResponse(1000));
+}
+
+String QuectelEC200U::getModuleVersion() {
+  _serial->println(F("ATI"));
+  String resp = readResponse(1000);
+  resp.replace("\r", "\n");
+  int okIdx = resp.lastIndexOf(F("\nOK"));
+  if (okIdx != -1) {
+    resp.remove(okIdx);
+  }
+  while (resp.indexOf("\n\n") != -1) {
+    resp.replace("\n\n", "\n");
+  }
+  resp.trim();
+  return resp;
 }
 
 // ===== General Commands =====
@@ -1637,8 +1775,9 @@ String QuectelEC200U::getNetworkTime() {
 }
 
 String QuectelEC200U::getNetworkInfo() {
-    _serial->println(F("AT+QNWINFO"));
-    return readResponse(1000);
+  _serial->println(F("AT+QNWINFO"));
+  String resp = _collectResponse(2000);
+  return _extractFirstLine(resp);
 }
 
 // ===== Advanced TCP/IP Configuration =====
@@ -1750,10 +1889,7 @@ bool QuectelEC200U::setPacketDomainEventReporting(int mode) {
 }
 
 // Hardware
-String QuectelEC200U::getWifiScan() {
-    _serial->println(F("AT+QWIFI=1")); // Assuming AT+QWIFI=1 triggers scan
-    return readResponse(5000);
-}
+
 
 // ===== Supplementary Service Commands =====
 bool QuectelEC200U::setCallForwarding(int reason, int mode, const String &number, int time) {
@@ -1796,7 +1932,6 @@ bool QuectelEC200U::sendHexData(int connectID, const String &hex_string) {
     return sendAT("AT+QISENDEX=" + String(connectID) + ",\"" + hex_string + "\"");
 }
 
-
 // ===== Advanced Error Reporting and SIM =====
 String QuectelEC200U::getExtendedErrorReports() {
     _serial->println(F("AT+CEER"));
@@ -1813,8 +1948,10 @@ String QuectelEC200U::getSIMStatus() {
 // Power Management
 void QuectelEC200U::powerOn(int pin) {
   pinMode(pin, OUTPUT);
-  digitalWrite(pin, LOW); // Set LOW and keep it there
-  delay(2000); // Wait for boot
+  digitalWrite(pin, HIGH);
+  delay(50);
+  digitalWrite(pin, LOW);
+  delay(500);
 }
 
 // ==========================================
@@ -1899,3 +2036,6 @@ bool QuectelEC200U::configureGNSSURC(bool enable) {
     cmd += enable ? "1" : "0";
     return sendAT(cmd);
 }
+
+
+

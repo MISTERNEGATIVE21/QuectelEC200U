@@ -13,7 +13,7 @@
 #define EC200U_PW_KEY_PIN 10
 
 #if defined(ARDUINO_ARCH_ESP32)
-  HardwareSerial& SerialAT = Serial1;
+  HardwareSerial SerialAT(1);
   QuectelEC200U modem(SerialAT, 115200, EC200U_RX_PIN, EC200U_TX_PIN);
 #else
   #include <SoftwareSerial.h>

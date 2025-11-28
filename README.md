@@ -92,6 +92,19 @@ void loop() {
 }
 ```
 
+## Default Pin Definitions
+
+Most ESP32 examples share the same wiring so you can copy/paste between sketches:
+
+| Signal | ESP32 Pin | Description |
+| --- | --- | --- |
+| `EC200U_RX_PIN` | 16 | Connects to the modem TX (ESP32 receives data) |
+| `EC200U_TX_PIN` | 17 | Connects to the modem RX (ESP32 transmits data) |
+| `EC200U_PWRKEY_PIN` | 10 | Drive LOW for ~2 s to toggle modem power |
+| `EC200U_STATUS_PIN` | 2 | Optional status feedback (HIGH when modem is on) |
+
+Update the macros at the top of each sketch if your carrier board routes the modem elsewhere. Non‑ESP32 boards still use the same macro names so the documentation stays consistent.
+
 ## Indian APN Settings
 
 For users in India, you may need to set the APN (Access Point Name) for your mobile carrier. Here is a list of common APNs:
@@ -108,6 +121,75 @@ You can use the `getOperator()` function to identify the network and then set th
 This library can be used with the `PPPOSClient` library to establish a PPP connection with the EC200U modem. This allows you to use standard networking libraries like `WiFiClient` and `HTTPClient` over the cellular connection.
 
 For a detailed example, see `examples/PPPOS_Demo/PPPOS_Demo.ino`.
+
+  ### TCP Socket Example
+
+  For raw sockets (e.g. pushing bytes to a custom server), the pattern is the same: bring up data, open a socket with `tcpOpen`, send with `tcpSend`, and read with `tcpRecv`. The new `examples/TCP_Client_Quickstart/TCP_Client_Quickstart.ino` sketch contains a full walk-through; the core loop looks like this:
+
+  ```cpp
+  const char HOST[] = "postman-echo.com";
+  int socketId = modem.tcpOpen(HOST, 80, 1, 0);
+  if (socketId >= 0) {
+    modem.tcpSend(socketId, "GET /get HTTP/1.1\r\nHost: postman-echo.com\r\n\r\n");
+    String response;
+    if (modem.tcpRecv(socketId, response, 1024, 8000)) {
+      Serial.println(response);
+    }
+    modem.tcpClose(socketId);
+  }
+  ```
+
+  ### HTTPS Example
+
+  To talk to HTTPS endpoints you must provision a CA certificate once, configure an SSL context, and then call `httpsGet`/`httpsPost`. See `examples/HTTPS_Client_Quickstart/HTTPS_Client_Quickstart.ino` for a ready-to-run sketch. The critical steps are:
+
+  ```cpp
+  modem.sslUploadCert(cloudflare_ca_cert, "cloudflare.pem");
+  modem.sslConfigure(1, "cloudflare.pem");
+
+  String response;
+  if (modem.httpsGet("https://www.cloudflare.com/", response)) {
+    Serial.println(response);
+  } else {
+    Serial.println(modem.getLastErrorString());
+  }
+  ```
+
+  ### Consentium IoT Example
+
+  The refreshed `examples/Consentium_IoT_Demo/Consentium_IoT_Demo.ino` sketch now performs a fully secure telemetry upload:
+
+  - Powers on the modem, attaches to your APN (with optional username/password), and activates PDP context 1.
+  - Uploads the Consentium IoT TLS certificate from `src/consentiumiot_cert.ca`, binds it via `sslConfigure`, and posts JSON metrics to `https://api.consentiumiot.com`.
+  - Automatically populates board metadata (MAC, firmware, signal strength) plus up to five sensor entries and prints the HTTPS response for quick debugging.
+  - Optionally sets a `receiveKey` so the sketch can call `GET /getData` and print the most recent feed after every upload (great for sanity checks or Grafana dashboards).
+
+  Update `SEND_KEY`, `BOARD_KEY`, and the APN credentials near the top of the sketch before flashing.
+
+  #### Fetch the latest data via receiveKey
+
+  ```cpp
+  static const char RECEIVE_KEY[] = "your-receive-key";
+  fetchConsentiumFeeds(true);               // GET /getData?recents=true
+  fetchConsentiumFeeds(false,
+                       "2025-11-18T08:30:21.000Z",
+                       "2025-11-18T10:00:21.000Z"); // Time-range slice compatible with Grafana
+  ```
+
+  ### WebUI Hotspot API
+
+  The WebUI Hotspot example has grown into a full control panel with REST endpoints you can also script against:
+
+  | Endpoint | Purpose |
+  | --- | --- |
+  | `GET /api/status` | Adds RSRP/RAT details, APN origin, and MQTT summary fields. |
+  | `GET /api/device/sensors` | Battery status (`+CBC` percent/voltage) plus on-board ADC sample. |
+  | `GET/POST /api/pdp/*` | Inspect PDP selection, activate/deactivate a context, or clear a saved APN. |
+  | `GET/POST /api/mqtt/*` | Track broker state, connect with APN overrides, publish payloads, and subscribe to topics. |
+  | `GET /api/call/status`, `POST /api/call/answer`, `POST /api/call/volume` | Surface active calls, answer incoming rings, and bump speaker volume from the UI.
+
+  The corresponding frontend now shows a Power & Sensors card, PDP controls, MQTT client section, and a richer Phone tab (answer button, live log, and speaker volume slider). These APIs are ideal for integrating the modem with external dashboards without touching the AT layer.
+
 
 ## API Reference
 

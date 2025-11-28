@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.8.0 - 2025-11-28
+- WebUI Hotspot: added battery/ADC sensor card, PDP management grid, MQTT client panel, and enhanced Phone tab with answer + speaker volume controls.
+- New REST endpoints: `/api/device/sensors`, `/api/pdp/*`, `/api/mqtt/*`, and `/api/call/volume` (+ richer `/api/status` payload) so external apps can drive the modem without touching AT commands directly.
+- Signal quality now uses a calibrated CSQ → percent lookup which better matches real RSSI.
+- Examples: added `TCP_Client_Quickstart`, `HTTPS_Client_Quickstart`, and rebuilt `Consentium_IoT_Demo` for TLS + JSON payloads.
+- TLS assets: `src/consentiumiot_cert.ca` now bundles the Consentium IoT certificate and the demo uploads it automatically.
+- Consentium IoT demo can optionally set a `receiveKey` and invoke `GET /getData` to print recent feeds or a custom time range after every successful POST.
+- Docs: README refreshed with pin mapping, WebUI API overview, and updated example guidance.
+
 ## 1.7.0 - 2025-11-27
 - New Example: `WebUI_Hotspot` - A standalone ESP32 Wi-Fi Hotspot with a premium Web UI to control the modem (SMS, GPS, Calls, AT, TCP).
 - Web UI features: Glassmorphism design, Dashboard, SMS Manager, GPS Tracker, Phone Dialer, Terminal.

@@ -1,6 +1,6 @@
 
 #if defined(ARDUINO_ARCH_ESP32)
-  HardwareSerial& SerialAT = Serial1;
+  HardwareSerial SerialAT(1);
 #else
   #include <SoftwareSerial.h>
   SoftwareSerial SerialAT(10, 11);

@@ -3,7 +3,7 @@
 
 #define EC200U_RX_PIN 16
 #define EC200U_TX_PIN 17
-#define EC200U_PW_KEY_PIN 10
+#define EC200U_PWRKEY_PIN 10
 #define EC200U_STATUS_PIN 2
 
 #if defined(ARDUINO_ARCH_ESP32)
@@ -15,20 +15,24 @@ SoftwareSerial SerialAT(EC200U_RX_PIN, EC200U_TX_PIN);
 QuectelEC200U modem(SerialAT);
 #endif
 
-static const char* CERT_PATH = "https_ca.pem";
+static const char APN[] = "your.apn.here";
+static const int PDP_CONTEXT_ID = 1;
+static const int SSL_CTX_ID = 1;
+static const char CERT_PATH[] = "cloudflare.pem";
+
+static const char HTTPS_URL[] = "https://www.cloudflare.com/";
 
 #if defined(ARDUINO_ARCH_ESP32)
 static void powerOnModem() {
-  pinMode(EC200U_PW_KEY_PIN, OUTPUT);
+  pinMode(EC200U_PWRKEY_PIN, OUTPUT);
   pinMode(EC200U_STATUS_PIN, INPUT);
   if (digitalRead(EC200U_STATUS_PIN) == LOW) {
-    digitalWrite(EC200U_PW_KEY_PIN, LOW);
+    digitalWrite(EC200U_PWRKEY_PIN, LOW);
     delay(2000);
-    digitalWrite(EC200U_PW_KEY_PIN, HIGH);
+    digitalWrite(EC200U_PWRKEY_PIN, HIGH);
+    delay(200);
   }
 }
-#else
-static void powerOnModem() {}
 #endif
 
 static void haltForever(const __FlashStringHelper *reason) {
@@ -45,6 +49,8 @@ static void requireStep(bool ok, const __FlashStringHelper *label) {
   } else {
     Serial.print(F("[FAIL] "));
     Serial.println(label);
+    Serial.print(F("Reason: "));
+    Serial.println(modem.getLastErrorString());
     haltForever(F("Stopping demo"));
   }
 }
@@ -60,36 +66,30 @@ void setup() {
   SerialAT.begin(9600);
 #endif
 
-  Serial.println(F("\n== EC200U HTTPS Demo =="));
+  Serial.println(F("\n== EC200U HTTPS Client Quickstart =="));
   requireStep(modem.begin(), F("Modem ready"));
   requireStep(modem.waitForNetwork(), F("Network registered"));
+  requireStep(modem.attachData(APN), F("Data attached"));
+  requireStep(modem.activatePDP(PDP_CONTEXT_ID), F("PDP active"));
 
-  const char APN[] = "jionet";   // Replace with your APN
-  const char USER[] = "";
-  const char PASS[] = "";
-
-  requireStep(modem.attachData(APN, USER, PASS), F("Data attached"));
-  requireStep(modem.activatePDP(1), F("PDP context 1 active"));
-
-  Serial.println(F("\nUploading TLS certificate (blocking)..."));
+  Serial.println(F("\nUploading CA certificate (blocking)..."));
   requireStep(modem.sslUploadCert(cloudflare_ca_cert, CERT_PATH), F("CA stored"));
-  requireStep(modem.sslConfigure(1, CERT_PATH), F("SSL ctx configured"));
+  requireStep(modem.sslConfigure(SSL_CTX_ID, CERT_PATH), F("SSL configured"));
+
+  Serial.print(F("Issuing HTTPS GET to: "));
+  Serial.println(HTTPS_URL);
 
   String response;
-  String headers[] = {String("User-Agent: EC200U-HTTPS-Demo")};
-  const size_t headerCount = sizeof(headers) / sizeof(headers[0]);
-
-  Serial.println(F("\nIssuing HTTPS GET (blocking until response)..."));
-  if (modem.httpsGet("https://www.cloudflare.com/", response, headers, headerCount)) {
-    Serial.println(F("HTTPS GET Response:"));
+  if (modem.httpsGet(HTTPS_URL, response)) {
+    Serial.println(F("HTTPS response:"));
     Serial.println(response);
   } else {
     Serial.print(F("HTTPS GET failed: "));
     Serial.println(modem.getLastErrorString());
   }
 
-  modem.deactivatePDP(1);
-  Serial.println(F("\nHTTPS demo finished."));
+  modem.deactivatePDP(PDP_CONTEXT_ID);
+  Serial.println(F("HTTPS demo complete."));
 }
 
 void loop() {}

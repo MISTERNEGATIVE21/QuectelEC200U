@@ -17,7 +17,7 @@
 #endif
 
 #if defined(ARDUINO_ARCH_ESP32)
-  HardwareSerial& modemSerial = Serial1;
+  HardwareSerial modemSerial(1);
 #else
   #include <SoftwareSerial.h>
   SoftwareSerial modemSerial(10, 11);

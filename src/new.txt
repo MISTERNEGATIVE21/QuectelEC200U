@@ -1,0 +1,187 @@
+================================================================================
+          DEVELOPER IMPLEMENTATION GUIDE: QUECTEL EC200U-CN-AA
+================================================================================
+Firmware Version: EC200UCNAAR03A14M08
+Target Module:    EC200U-CN-AA LTE Standard Module
+Date:             2025-02-07 (Based on Release Notes)
+
+--------------------------------------------------------------------------------
+1. SYSTEM CONSTANTS & CONFIGURATION LIMITS
+--------------------------------------------------------------------------------
+Use these values to define constants in your firmware or microcontroller code.
+
+MAX_FLASH_OPS_DAILY : 30
+  - Description: Maximum combined operations per day for Power On/Off, CFUN 
+    toggle, SIM hot-plug, or Dual-SIM switching.
+  - [cite_start]Reason: To extend flash memory service life. [cite: 28]
+
+PWR_ON_WAIT_MS : 2000
+  - Description: Milliseconds to wait after VBAT is enabled before pulling 
+    [cite_start]PWRKEY low. [cite: 23]
+
+PWRKEY_HOLD_MS : 2000
+  - [cite_start]Description: Milliseconds to hold PWRKEY low to trigger power-on. [cite: 23]
+
+MQTT_STR_LEN : 256
+  - [cite_start]Description: Maximum length for MQTT ClientID, Username, and Password. [cite: 110]
+
+DTMF_MIN_MS : 10
+  - [cite_start]Description: Minimum supported duration for DTMF tones (lowered from 500ms). [cite: 88]
+
+BAUD_RATES_NEW : 1200, 10400
+  - [cite_start]Description: Newly supported UART baud rates. [cite: 57]
+
+--------------------------------------------------------------------------------
+2. FUNCTIONAL COMMAND MAP
+--------------------------------------------------------------------------------
+Map these identifiers to specific AT commands in your function definitions.
+
+[A] NETWORK & SIM CONTROL
+-------------------------
+Function ID: SIM_SWITCH
+Command:     AT+QSIMCHK
+[cite_start]Description: Quickly switch between SIM cards. [cite: 42]
+
+Function ID: ISIM_TOGGLE
+Command:     AT+QIMSCFG="isim"
+[cite_start]Description: Turn ISIM applications on or off. [cite: 43]
+
+Function ID: DSDS_SWITCH
+Command:     AT+QDSTYPE
+[cite_start]Description: Switch between DSSS (Single Sim) and DSDS (Dual Sim). [cite: 54]
+
+Function ID: GET_OP_NAME
+Command:     AT+QSPN
+[cite_start]Description: Get operator name even when unregistered. [cite: 56]
+
+Function ID: NET_NO_SW
+Command:     AT+QCFG="cops_no_mode_change"
+[cite_start]Description: Prevent network mode switch after AT+COPS=1. [cite: 59]
+
+[B] AUDIO & VOICE
+-----------------
+Function ID: BLOCK_INCOM
+Command:     AT+QREFUSECS
+[cite_start]Description: Reject incoming calls and SMS. [cite: 44]
+
+Function ID: CALL_PLAY
+Command:     AT+QAUDPLAY
+[cite_start]Description: Play an audio file during an incoming call (stops on answer/hangup). [cite: 51]
+
+Function ID: CODEC_IIC
+Command:     AT+QAUDCFG="iic"
+[cite_start]Description: Configure the IIC channel for an external audio codec. [cite: 46]
+
+[C] DATA & TCP/IP
+-----------------
+Function ID: TCP_SET_MSS
+Command:     AT+QCFG="tcp/mss"
+[cite_start]Description: Modify TCP Maximum Segment Size. [cite: 48]
+
+Function ID: OPEN_MAX_CON
+Command:     AT+QIOPEN
+[cite_start]Description: Supports <tcp_client_maxnum> to limit client connections. [cite: 157]
+
+Function ID: BIP_STATUS
+Command:     AT+QCFG="bip/status"
+[cite_start]Description: Enable URC reporting for Bearer Independent Protocol status. [cite: 61]
+
+[D] SYSTEM & HARDWARE
+---------------------
+Function ID: USB_CDC
+Command:     AT+QUSBCFG=3,1
+[cite_start]Description: Enumerate as USB CDC ACM (useful for Linux ttyACM0). [cite: 62]
+
+Function ID: RI_AUTO_CTRL
+Command:     AT+QCFG="urc/ri/ring","auto"
+[cite_start]Description: Automatically pull RI pin low on RING and high on exit. [cite: 60]
+
+Function ID: GNSS_URC
+Command:     AT+QGPSCFG="urc"
+[cite_start]Description: Enable/Disable URC reports for GNSS firmware/modes. [cite: 50]
+
+--------------------------------------------------------------------------------
+3. CRITICAL IMPLEMENTATION LOGIC (PSEUDO-CODE)
+--------------------------------------------------------------------------------
+
+LOGIC 1: POWER-UP SEQUENCE
+--------------------------
+WARNING: If PWRKEY is grounded, module cannot restart without full power cut.
+[cite_start]You can use AT+QPOWD=2, but it causes higher current leakage. [cite: 19, 20]
+
+Algorithm:
+1. [cite_start]Supply Power to VBUS. [cite: 22]
+2. Supply Power to VBAT.
+3. [cite_start]WAIT 2000 ms (Critical stability period). [cite: 23]
+4. PULL PWRKEY LOW.
+5. [cite_start]WAIT 2000 ms. [cite: 23]
+6. RELEASE PWRKEY.
+
+LOGIC 2: APN RECONFIGURATION
+----------------------------
+[cite_start]Constraint: PDP context must be deactivated before changing APN. [cite: 21]
+
+Algorithm:
+function setAPN(new_apn):
+  IF (isPDPActive()):
+    EXECUTE "AT+CGACT=0" (or AT+QIACT=0)
+  END IF
+  EXECUTE "AT+CGDCONT=1,\"IP\",\"" + new_apn + "\""
+
+LOGIC 3: SERIAL FLOW CONTROL
+----------------------------
+[cite_start]Constraint: Only pull RTS during the stop bit to avoid junk data. [cite: 26]
+
+--------------------------------------------------------------------------------
+4. ARDUINO JSON COMMAND STRUCTURE
+--------------------------------------------------------------------------------
+Copy this JSON object to use as your command dictionary.
+
+{
+  "device": "EC200U-CN-AA",
+  "firmware_version": "EC200UCNAAR03A14M08",
+  "limits": {
+    "daily_flash_ops": 30,
+    "mqtt_string_max": 256
+  },
+  "commands": [
+    {
+      "id": "SIM_SWITCH",
+      "cmd": "AT+QSIMCHK",
+      "desc": "Quick switch SIM card",
+      "args": []
+    },
+    {
+      "id": "ISIM_TOGGLE",
+      "cmd": "AT+QIMSCFG=\"isim\"",
+      "desc": "Toggle ISIM application",
+      "args": ["<status>"]
+    },
+    {
+      "id": "MQTT_CONN",
+      "cmd": "AT+QMTCONN",
+      "desc": "Connect to MQTT broker",
+      "args": ["<clientID>", "<username>", "<password>"],
+      "validation": { "max_len": 256 }
+    },
+    {
+      "id": "AUDIO_PLAY_CALL",
+      "cmd": "AT+QAUDPLAY",
+      "desc": "Play audio during incoming call",
+      "args": ["<filename>"],
+      "notes": "Stops on answer/hangup"
+    },
+    {
+      "id": "USB_CDC_MODE",
+      "cmd": "AT+QUSBCFG=3,1",
+      "desc": "Set USB to CDC ACM mode",
+      "args": []
+    },
+    {
+      "id": "GNSS_URC",
+      "cmd": "AT+QGPSCFG=\"urc\"",
+      "desc": "Config GNSS URC reporting",
+      "args": ["<enable>"]
+    }
+  ]
+}

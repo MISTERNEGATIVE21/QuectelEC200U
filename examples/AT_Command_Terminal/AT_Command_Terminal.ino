@@ -78,34 +78,34 @@ void printStatus() {
   Serial.println(F("║            Modem Status Report                ║"));
   Serial.println(F("╠═══════════════════════════════════════════════╣"));
   
-  Serial.print(F("║ State: "));
-  switch(modem.getState()) {
-    case MODEM_UNINITIALIZED:
-      Serial.println(F("Uninitialized                     ║"));
+  int reg = modem.getRegistrationStatus();
+  Serial.print(F("║ Registration: "));
+  switch(reg) {
+    case 0:
+      Serial.println(F("Not searching                     ║"));
       break;
-    case MODEM_INITIALIZING:
-      Serial.println(F("Initializing...                   ║"));
+    case 1:
+      Serial.println(F("Registered (Home)                 ║"));
       break;
-    case MODEM_READY:
-      Serial.println(F("Ready                             ║"));
+    case 2:
+      Serial.println(F("Searching...                      ║"));
       break;
-    case MODEM_ERROR:
-      Serial.println(F("Error                             ║"));
+    case 3:
+      Serial.println(F("Registration denied               ║"));
       break;
-    case MODEM_NETWORK_CONNECTED:
-      Serial.println(F("Network Connected                 ║"));
+    case 4:
+      Serial.println(F("Unknown                           ║"));
       break;
-    case MODEM_DATA_READY:
-      Serial.println(F("Data Connection Ready             ║"));
+    case 5:
+      Serial.println(F("Registered (Roaming)              ║"));
+      break;
+    default:
+      Serial.println(F("Unknown                           ║"));
       break;
   }
   
-  Serial.print(F("║ Initialized: "));
-  Serial.print(modem.isInitialized() ? F("Yes") : F("No "));
-  Serial.println(F("                            ║"));
-  
   Serial.print(F("║ Network: "));
-  Serial.print(modem.isNetworkReady() ? F("Connected") : F("Not Connected"));
+  Serial.print((reg == 1 || reg == 5) ? F("Connected") : F("Not Connected"));
   Serial.println(F("                     ║"));
   
   int signal = modem.getSignalStrength();

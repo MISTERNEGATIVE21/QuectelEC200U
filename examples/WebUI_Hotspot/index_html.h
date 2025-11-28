@@ -338,7 +338,8 @@ const char index_html[] PROGMEM = R"rawliteral(
                 <div class="nav-tab" onclick="showSection('gps', this)">GPS</div>
                 <div class="nav-tab" onclick="showSection('phone', this)">Phone</div>
                 <div class="nav-tab" onclick="showSection('terminal', this)">Terminal</div>
-                <div class="nav-tab" onclick="showSection('tcp', this)">TCP</div>
+                <div class="nav-tab" onclick="showSection('tcp', this)">Internet</div>
+                <div class="nav-tab" onclick="showSection('mqtt', this)">MQTT</div>
                 <div class="nav-tab" onclick="showSection('settings', this)">Settings</div>
                 <div class="nav-tab" onclick="showSection('advanced', this)">Advanced</div>
             </div>
@@ -354,11 +355,15 @@ const char index_html[] PROGMEM = R"rawliteral(
                     <div class="status-grid">
                         <div class="status-item">
                             <div class="status-label">Signal</div>
-                            <div class="status-value" id="signal-val">--%</div>
+                            <div class="status-value" id="signal-val">--</div>
                         </div>
                         <div class="status-item">
-                            <div class="status-label">Type</div>
+                            <div class="status-label">Radio</div>
                             <div class="status-value" id="net-type">--</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-label">Registration</div>
+                            <div class="status-value" id="registration">--</div>
                         </div>
                         <div class="status-item">
                             <div class="status-label">Operator</div>
@@ -367,6 +372,10 @@ const char index_html[] PROGMEM = R"rawliteral(
                         <div class="status-item">
                             <div class="status-label">SIM</div>
                             <div class="status-value" id="sim-status">--</div>
+                        </div>
+                        <div class="status-item" style="grid-column: span 2;">
+                            <div class="status-label">Network Info</div>
+                            <div class="status-value" id="network-info" style="font-size: 0.85rem;">--</div>
                         </div>
                     </div>
                 </div>
@@ -384,6 +393,10 @@ const char index_html[] PROGMEM = R"rawliteral(
                             <div class="status-label">Model</div>
                             <div class="status-value" id="model">--</div>
                         </div>
+                        <div class="status-item" style="grid-column: span 2;">
+                            <div class="status-label">Firmware</div>
+                            <div class="status-value" id="firmware" style="font-family: var(--font-mono); font-size: 0.85rem;">--</div>
+                        </div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
                         <button onclick="refreshStatus()" class="secondary">
@@ -397,6 +410,35 @@ const char index_html[] PROGMEM = R"rawliteral(
                                 <span style="margin-right: 5px;">⭕</span> Off
                             </button>
                         </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Power & Sensors</div>
+                        <button onclick="refreshDeviceSensors(true)" class="secondary" style="width: auto; padding: 8px 16px; font-size: 0.85rem;">Refresh</button>
+                    </div>
+                    <div class="status-grid">
+                        <div class="status-item">
+                            <div class="status-label">Battery</div>
+                            <div class="status-value" id="battery-percent">--</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-label">Voltage</div>
+                            <div class="status-value" id="battery-voltage">--</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-label">ADC Value</div>
+                            <div class="status-value" id="battery-adc">--</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-label">State</div>
+                            <div class="status-value" id="battery-state">--</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 12px; font-size: 0.8rem; color: var(--text-secondary);">
+                        <div>Updated: <span id="battery-updated">--</span></div>
+                        <div>Raw: <span id="battery-raw" style="font-family: var(--font-mono); font-size: 0.75rem;">--</span></div>
                     </div>
                 </div>
             </div>
@@ -453,15 +495,45 @@ const char index_html[] PROGMEM = R"rawliteral(
 
         <!-- Phone -->
         <div id="phone" class="section">
-            <div class="card" style="max-width: 400px; margin: 0 auto;">
-                <div class="card-header">
+            <div class="card" style="max-width: 420px; margin: 0 auto;">
+                <div class="card-header" style="justify-content: space-between; gap: 10px;">
                     <div class="card-title">Phone Dialer</div>
+                    <button onclick="refreshCallStatus(true)" class="secondary" style="width: auto; padding: 6px 12px; font-size: 0.8rem;">Refresh</button>
                 </div>
-                <input type="tel" id="phone-number" placeholder="+1234567890" style="font-size: 1.5rem; text-align: center; letter-spacing: 1px; font-family: var(--font-mono);">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <input type="tel" id="phone-number" placeholder="+1234567890" style="font-size: 1.4rem; text-align: center; letter-spacing: 1px; font-family: var(--font-mono);">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
                     <button onclick="dialNumber()" style="background: var(--success-color); box-shadow: 0 4px 12px rgba(74, 222, 128, 0.2);">Call</button>
                     <button onclick="hangupCall()" class="danger">End Call</button>
                 </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 15px;">
+                    <button onclick="answerCall()" class="secondary" style="background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.4); color: #4ade80;">Answer</button>
+                    <button onclick="refreshCallStatus()" class="secondary">Sync Status</button>
+                </div>
+                <div class="status-grid" style="margin-bottom: 15px;">
+                    <div class="status-item">
+                        <div class="status-label">State</div>
+                        <div class="status-value" id="call-state">Idle</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-label">Direction</div>
+                        <div class="status-value" id="call-direction">--</div>
+                    </div>
+                    <div class="status-item" style="grid-column: span 2;">
+                        <div class="status-label">Number</div>
+                        <div class="status-value" id="call-number" style="font-family: var(--font-mono); font-size: 0.95rem;">--</div>
+                    </div>
+                </div>
+                <div>
+                    <div class="status-label">Active Calls</div>
+                    <div id="call-log" class="terminal-output" style="height: 140px; color: var(--text-secondary);">No active calls</div>
+                </div>
+                <div class="status-label" style="margin-top: 15px;">Speaker Volume</div>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 8px;">
+                    <button onclick="adjustCallVolume(-5)" class="secondary" style="width: auto; padding: 8px 14px;">Vol -</button>
+                    <div id="call-volume-display" style="min-width: 60px; text-align: center; font-weight: 600;">--</div>
+                    <button onclick="adjustCallVolume(5)" class="secondary" style="width: auto; padding: 8px 14px;">Vol +</button>
+                </div>
+                <div id="call-message" style="text-align: center; font-size: 0.85rem; color: var(--text-secondary); min-height: 20px;"></div>
             </div>
         </div>
 
@@ -480,11 +552,11 @@ const char index_html[] PROGMEM = R"rawliteral(
             </div>
         </div>
 
-        <!-- TCP -->
+        <!-- Internet -->
         <div id="tcp" class="section">
             <div class="card">
                 <div class="card-header">
-                    <div class="card-title">TCP Client</div>
+                    <div class="card-title">Internet Client</div>
                 </div>
                 <div class="grid" style="grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 15px;">
                     <input type="text" id="tcp-host" placeholder="Host (e.g. google.com)" style="margin-bottom: 0;">
@@ -494,12 +566,143 @@ const char index_html[] PROGMEM = R"rawliteral(
                     <button onclick="tcpOpen()">Connect</button>
                     <button onclick="tcpClose()" class="danger">Disconnect</button>
                 </div>
+                <button onclick="loadTcpDemo()" class="secondary" style="margin-bottom: 15px;">Load HTTP POST Demo</button>
                 <textarea id="tcp-data" rows="3" placeholder="Data payload (e.g. GET / HTTP/1.1\r\nHost: google.com\r\n\r\n)" style="font-family: var(--font-mono); font-size: 0.85rem;"></textarea>
                 <button onclick="tcpSend()" class="secondary">Send Data</button>
                 <div style="margin-top: 20px;">
                     <div class="status-label">Server Response</div>
                     <div id="tcp-response" class="terminal-output" style="height: 150px;"></div>
                 </div>
+
+                <div style="margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 20px;">
+                    <h3 style="margin-bottom: 12px;">PPP / PDP Control</h3>
+                    <div class="status-grid" style="grid-template-columns: repeat(2, minmax(140px, 1fr)); margin-bottom: 15px;">
+                        <div class="status-item">
+                            <div class="status-label">Context</div>
+                            <div class="status-value" id="pdp-ctx">1</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-label">State</div>
+                            <div class="status-value" id="pdp-state">Unknown</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-label">IP Address</div>
+                            <div class="status-value" id="pdp-ip" style="font-size: 0.85rem;">--</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-label">APN Source</div>
+                            <div class="status-value" id="pdp-source">--</div>
+                        </div>
+                        <div class="status-item" style="grid-column: span 2;">
+                            <div class="status-label">Detected Operator</div>
+                            <div class="status-value" id="pdp-operator">--</div>
+                        </div>
+                        <div class="status-item" style="grid-column: span 2;">
+                            <div class="status-label">Selected APN</div>
+                            <div class="status-value" id="pdp-detected-apn" style="font-size: 0.85rem;">--</div>
+                        </div>
+                    </div>
+                    <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
+                        <input type="text" id="pdp-context" placeholder="Context ID (default 1)" value="1">
+                        <input type="text" id="pdp-apn" placeholder="Custom APN (optional)">
+                        <input type="text" id="pdp-user" placeholder="Username (optional)">
+                        <input type="password" id="pdp-pass" placeholder="Password (optional)">
+                        <select id="pdp-auth">
+                            <option value="0">Auth: None</option>
+                            <option value="1">Auth: PAP</option>
+                            <option value="2">Auth: CHAP</option>
+                        </select>
+                    </div>
+                    <label style="display: flex; align-items: center; gap: 8px; margin: 10px 0; font-size: 0.85rem; color: var(--text-secondary);">
+                        <input type="checkbox" id="pdp-save" style="width: auto;"> Save as custom APN
+                    </label>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px;">
+                        <button onclick="activatePdp()">Activate PDP / PPP</button>
+                        <button onclick="deactivatePdp()" class="danger">Deactivate PDP</button>
+                        <button onclick="refreshPdpStatus()" class="secondary">Refresh Status</button>
+                        <button onclick="clearCustomApn()" class="secondary">Clear Custom APN</button>
+                    </div>
+                    <div id="pdp-message" style="margin-top: 10px; font-size: 0.85rem; color: var(--text-secondary);"></div>
+                </div>
+                </div>
+            </div>
+
+            <!-- MQTT -->
+            <div id="mqtt" class="section">
+                <div class="card">
+                    <div class="card-header" style="gap: 10px;">
+                        <div class="card-title">MQTT Client</div>
+                        <button onclick="refreshMqttStatus()" class="secondary" style="width: auto; padding: 8px 16px; font-size: 0.85rem;">Refresh</button>
+                    </div>
+                    <div class="status-grid" style="margin-bottom: 20px; grid-template-columns: repeat(2, minmax(140px, 1fr));">
+                        <div class="status-item">
+                            <div class="status-label">Connection</div>
+                            <div class="status-value" id="mqtt-connection">--</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-label">Server</div>
+                            <div class="status-value" id="mqtt-server">--</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-label">Port</div>
+                            <div class="status-value" id="mqtt-port">--</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-label">Context</div>
+                            <div class="status-value" id="mqtt-ctx">--</div>
+                        </div>
+                        <div class="status-item" style="grid-column: span 2;">
+                            <div class="status-label">Last Topic</div>
+                            <div class="status-value" id="mqtt-last-topic" style="font-size: 0.85rem;">--</div>
+                        </div>
+                        <div class="status-item" style="grid-column: span 2;">
+                            <div class="status-label">Last Error</div>
+                            <div class="status-value" id="mqtt-last-error" style="font-size: 0.85rem; color: #f87171;">--</div>
+                        </div>
+                    </div>
+
+                    <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 15px;">
+                        <input type="text" id="mqtt-host" placeholder="Broker Host (e.g. test.mosquitto.org)">
+                        <input type="number" id="mqtt-port-input" placeholder="Port" value="1883">
+                        <input type="number" id="mqtt-context" placeholder="Context ID" value="1">
+                        <input type="text" id="mqtt-apn" placeholder="Custom APN (optional)">
+                        <input type="text" id="mqtt-user" placeholder="APN Username (optional)">
+                        <input type="password" id="mqtt-pass" placeholder="APN Password (optional)">
+                        <select id="mqtt-auth">
+                            <option value="0">Auth: None</option>
+                            <option value="1">Auth: PAP</option>
+                            <option value="2">Auth: CHAP</option>
+                        </select>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 15px;">
+                        <button onclick="connectMqtt()">Connect</button>
+                        <button onclick="disconnectMqtt()" class="danger">Disconnect</button>
+                        <button onclick="refreshMqttStatus()" class="secondary">Refresh Status</button>
+                    </div>
+                    <div id="mqtt-message" style="margin-bottom: 20px; font-size: 0.85rem; color: var(--text-secondary); min-height: 20px;"></div>
+
+                    <div style="margin-bottom: 15px;">
+                        <h3 style="margin-bottom: 10px;">Publish Message</h3>
+                        <input type="text" id="mqtt-topic" placeholder="Topic (e.g. demo/topic)">
+                        <textarea id="mqtt-payload" rows="3" placeholder='Payload JSON or text (e.g. {"hello":"world"})' style="font-family: var(--font-mono);"></textarea>
+                        <button onclick="publishMqtt()" class="secondary" style="margin-top: 10px;">Publish</button>
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <h3 style="margin-bottom: 10px;">Subscribe</h3>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="mqtt-sub-topic" placeholder="Topic filter" style="margin-bottom: 0;">
+                            <button onclick="subscribeMqtt()" class="secondary" style="width: auto;">Subscribe</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="status-label">Activity Log</div>
+                        <div id="mqtt-log" class="terminal-output" style="height: 180px;"></div>
+                    </div>
+                </div>
+            </div>
             </div>
         </div>
         <!-- Settings -->
@@ -529,7 +732,7 @@ const char index_html[] PROGMEM = R"rawliteral(
                 <div class="card-header">
                     <div class="card-title">Advanced Controls</div>
                 </div>
-                
+
                 <div style="margin-bottom: 20px;">
                     <h3>SIM & Network</h3>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -548,9 +751,26 @@ const char index_html[] PROGMEM = R"rawliteral(
                 </div>
 
                 <div style="margin-bottom: 20px;">
+                    <h3>Network Ping (AT+QPING)</h3>
+                    <input type="text" id="ping-host" placeholder="Host or IP (e.g. 8.8.8.8)">
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                        <input type="number" id="ping-context" placeholder="Context ID" value="1">
+                        <input type="number" id="ping-timeout" placeholder="Timeout (s)" value="4">
+                        <input type="number" id="ping-count" placeholder="# Pings" value="4">
+                    </div>
+                    <button onclick="runPing()" class="secondary">Run Ping</button>
+                    <div id="ping-output" style="margin-top: 10px; font-family: var(--font-mono); white-space: pre-wrap; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; min-height: 60px;">--</div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
                     <h3>Quectel WiFi Scan</h3>
                     <button onclick="scanQuectelWifi()" class="secondary" style="width: 100%;">Scan Networks</button>
-                    <div id="quectel-wifi-results" style="margin-top: 10px; font-family: monospace; white-space: pre-wrap; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; display: none;"></div>
+                    <div id="quectel-wifi-results" style="margin-top: 10px; font-family: var(--font-mono); white-space: pre-wrap; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; display: none;"></div>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <h3>Bluetooth Scan</h3>
+                    <button onclick="scanBluetooth()" class="secondary" style="width: 100%;">Scan Devices</button>
+                    <div id="bt-results" style="margin-top: 10px; font-family: var(--font-mono); white-space: pre-wrap; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; display: none;"></div>
                 </div>
             </div>
         </div>
@@ -559,11 +779,40 @@ const char index_html[] PROGMEM = R"rawliteral(
     <div id="toast">Notification</div>
 
     <script>
+        let modemInfoCache = null;
+        let lastStatusSnapshot = null;
+
+        function setText(id, value) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.innerText = value;
+            }
+        }
+
+        function escapeHtml(str = '') {
+            return str.replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c] || c));
+        }
+
+        function batteryStatusText(code) {
+            const map = {
+                0: 'Unknown',
+                1: 'Not Charging',
+                2: 'Charging',
+                3: 'Charged',
+                4: 'Fault',
+                5: 'Over Temp'
+            };
+            return map.hasOwnProperty(code) ? map[code] : 'Unknown';
+        }
+
         function showSection(id, tab) {
             document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
             tab.classList.add('active');
+            if (id === 'advanced') {
+                refreshModemInfo(true);
+            }
         }
 
         function showToast(msg) {
@@ -593,6 +842,32 @@ const char index_html[] PROGMEM = R"rawliteral(
             term.scrollTop = term.scrollHeight;
         }
 
+        function applyModemInfo(info) {
+            if (!info) return;
+            modemInfoCache = info;
+            const firmware = info.firmware || '--';
+            const model = info.model || '--';
+            const manufacturer = info.manufacturer || '--';
+            const imei = info.imei || '--';
+            const banner = (info.version || '').replace(/\r/g, '\n');
+
+            document.getElementById('firmware').innerText = firmware;
+            document.getElementById('model').innerText = model;
+            document.getElementById('imei').innerText = imei;
+
+        }
+
+        async function refreshModemInfo(force = false) {
+            if (!force && modemInfoCache) {
+                applyModemInfo(modemInfoCache);
+                return;
+            }
+            const info = await apiCall('/api/modem/info');
+            if (info) {
+                applyModemInfo(info);
+            }
+        }
+
         async function apiCall(endpoint, data = null) {
             try {
                 const options = {
@@ -614,12 +889,83 @@ const char index_html[] PROGMEM = R"rawliteral(
         async function refreshStatus() {
             const data = await apiCall('/api/status');
             if (data) {
-                document.getElementById('signal-val').innerText = data.signal + '%';
+                lastStatusSnapshot = data;
+                document.getElementById('signal-val').innerText = `${data.signal}% (${data.signal_text})`;
                 document.getElementById('operator').innerText = data.operator;
-                document.getElementById('net-type').innerText = data.net_type;
+                document.getElementById('net-type').innerText = data.net_type || '--';
+                document.getElementById('registration').innerText = data.registration || '--';
                 document.getElementById('sim-status').innerText = data.sim_status;
-                document.getElementById('imei').innerText = data.imei;
-                document.getElementById('model').innerText = data.model;
+                document.getElementById('network-info').innerText = data.network_info || '--';
+                if (data.imei) document.getElementById('imei').innerText = data.imei;
+                if (data.model) document.getElementById('model').innerText = data.model;
+                if (data.mqtt) applyMqttStatus({
+                    connected: data.mqtt.connected,
+                    server: data.mqtt.server,
+                    port: data.mqtt.port,
+                    last_topic: data.mqtt.last_topic
+                });
+            }
+        }
+
+        function applySensorData(data) {
+            const battery = data && data.battery ? data.battery : {};
+            const sensors = data && data.sensors ? data.sensors : {};
+            if (battery.valid && typeof battery.percent === 'number') {
+                setText('battery-percent', `${battery.percent}%`);
+            } else {
+                setText('battery-percent', '--');
+            }
+            if (typeof battery.voltage === 'number' && !isNaN(battery.voltage)) {
+                setText('battery-voltage', `${battery.voltage.toFixed(2)} V`);
+            } else {
+                setText('battery-voltage', '--');
+            }
+            setText('battery-state', batteryStatusText(battery.status));
+            setText('battery-raw', battery.raw || '--');
+            setText('battery-adc', sensors.adc_value != null ? sensors.adc_value : '--');
+            setText('battery-updated', new Date().toLocaleTimeString());
+        }
+
+        async function refreshDeviceSensors(showToastMsg = false) {
+            const res = await apiCall('/api/device/sensors');
+            if (res) {
+                applySensorData(res);
+                if (showToastMsg) showToast('Battery updated');
+            } else if (showToastMsg) {
+                showToast('Unable to read sensors');
+            }
+        }
+
+        function applyCallStatus(data) {
+            const entries = (data && Array.isArray(data.entries)) ? data.entries : [];
+            const activeEntry = entries.length ? entries[0] : null;
+            setText('call-state', activeEntry ? (activeEntry.state || 'Active') : 'Idle');
+            setText('call-direction', activeEntry ? (activeEntry.direction || '--') : '--');
+            setText('call-number', activeEntry ? (activeEntry.number || '--') : '--');
+            if (data && typeof data.speaker_volume === 'number') {
+                setText('call-volume-display', `${data.speaker_volume}%`);
+            }
+
+            const logEl = document.getElementById('call-log');
+            if (logEl) {
+                if (entries.length === 0) {
+                    logEl.innerHTML = 'No active calls';
+                } else {
+                    logEl.innerHTML = entries.map((entry, idx) => {
+                        const number = entry.number && entry.number.length ? entry.number : 'Unknown';
+                        return `<div><strong>${idx + 1}. ${entry.state || 'Active'}</strong> · ${entry.direction || '--'}<br><span style="color:#94a3b8;">${escapeHtml(number)}</span></div>`;
+                    }).join('<hr style="border:none;border-top:1px solid rgba(255,255,255,0.08); margin:8px 0;">');
+                }
+            }
+        }
+
+        async function refreshCallStatus(showToastMsg = false) {
+            const res = await apiCall('/api/call/status');
+            if (res && res.success) {
+                applyCallStatus(res);
+                if (showToastMsg) showToast('Call status synced');
+            } else if (showToastMsg) {
+                showToast('Unable to sync call status');
             }
         }
 
@@ -671,15 +1017,59 @@ const char index_html[] PROGMEM = R"rawliteral(
         async function dialNumber() {
             const num = document.getElementById('phone-number').value;
             if (!num) return showToast("Enter number");
+            const callMsg = document.getElementById('call-message');
+            if (callMsg) callMsg.innerText = 'Dialing...';
             const res = await apiCall('/api/call/dial', { number: num });
-            if (res && res.success) showToast("Calling...");
-            else showToast("Call failed");
+            if (res && res.success) {
+                showToast("Calling...");
+                if (callMsg) callMsg.innerText = 'Calling in progress';
+            } else {
+                showToast("Call failed");
+                if (callMsg) callMsg.innerText = 'Call attempt failed';
+            }
+            refreshCallStatus();
         }
 
         async function hangupCall() {
             const res = await apiCall('/api/call/hangup', {});
-            if (res && res.success) showToast("Call Ended");
-            else showToast("Hangup failed");
+            const callMsg = document.getElementById('call-message');
+            if (res && res.success) {
+                showToast("Call Ended");
+                if (callMsg) callMsg.innerText = 'Call ended';
+            } else {
+                showToast("Hangup failed");
+                if (callMsg) callMsg.innerText = 'Unable to end call';
+            }
+            refreshCallStatus();
+        }
+
+        async function answerCall() {
+            const callMsg = document.getElementById('call-message');
+            if (callMsg) callMsg.innerText = 'Answering incoming call...';
+            const res = await apiCall('/api/call/answer', {});
+            if (res && res.success) {
+                showToast('Call answered');
+                if (callMsg) callMsg.innerText = 'Call answered';
+            } else {
+                showToast('Answer failed');
+                if (callMsg) callMsg.innerText = 'Unable to answer';
+            }
+            refreshCallStatus();
+        }
+
+        async function adjustCallVolume(delta) {
+            const callMsg = document.getElementById('call-message');
+            if (callMsg) callMsg.innerText = 'Adjusting volume...';
+            const res = await apiCall('/api/call/volume', { delta });
+            if (res && res.success) {
+                setText('call-volume-display', `${res.level}%`);
+                showToast(`Volume ${res.level}%`);
+                if (callMsg) callMsg.innerText = `Speaker volume ${res.level}%`;
+            } else {
+                const err = (res && res.error) ? res.error : 'Volume change failed';
+                showToast(err);
+                if (callMsg) callMsg.innerText = err;
+            }
         }
 
         async function sendAT() {
@@ -702,14 +1092,23 @@ const char index_html[] PROGMEM = R"rawliteral(
             const host = document.getElementById('tcp-host').value;
             const port = document.getElementById('tcp-port').value;
             showToast("Connecting...");
-            const res = await apiCall('/api/tcp/open', { host: host, port: parseInt(port) });
-            if (res && res.success) showToast("Connected (ID: " + res.socketId + ")");
-            else showToast("Connection Failed");
+            const payload = { host: host, port: parseInt(port) };
+            const res = await apiCall('/api/tcp/open', payload);
+            if (res && res.success) {
+                showToast("Connected (ID: " + res.socketId + ")");
+                document.getElementById('tcp-response').innerText = '';
+            } else {
+                showToast(res && res.error ? res.error : "Connection Failed");
+            }
         }
 
         async function tcpClose() {
             const res = await apiCall('/api/tcp/close', {});
-            if (res && res.success) showToast("Disconnected");
+            if (res && res.success) {
+                showToast("Disconnected");
+            } else {
+                showToast(res && res.error ? res.error : "No open socket");
+            }
         }
 
         async function tcpSend() {
@@ -717,12 +1116,18 @@ const char index_html[] PROGMEM = R"rawliteral(
             const res = await apiCall('/api/tcp/send', { data: data });
             if (res && res.success) {
                 showToast("Data Sent");
-                if (res.response) {
-                    document.getElementById('tcp-response').innerText = res.response;
-                }
+                const responseBox = document.getElementById('tcp-response');
+                responseBox.innerText = res.response ? res.response : (res.raw || 'No response.');
             } else {
-                showToast("Send Failed");
+                showToast(res && res.error ? res.error : "Send Failed");
             }
+        }
+
+        function loadTcpDemo() {
+            document.getElementById('tcp-host').value = 'postman-echo.com';
+            document.getElementById('tcp-port').value = 80;
+            document.getElementById('tcp-data').value = 'POST /post HTTP/1.1\r\nHost: postman-echo.com\r\nContent-Type: application/json\r\nContent-Length: 27\r\n\r\n{"hello":"ec200u webui"}';
+            showToast('Demo request loaded');
         }
 
         async function saveWifi() {
@@ -774,19 +1179,307 @@ const char index_html[] PROGMEM = R"rawliteral(
         }
 
         async function scanQuectelWifi() {
-            document.getElementById('quectel-wifi-results').style.display = 'block';
-            document.getElementById('quectel-wifi-results').innerText = "Scanning...";
+            const panel = document.getElementById('quectel-wifi-results');
+            panel.style.display = 'block';
+            panel.innerText = "Scanning...";
             const res = await apiCall('/api/quectel/wifi/scan', {});
             if (res && res.success) {
-                document.getElementById('quectel-wifi-results').innerText = res.data || "No networks found.";
+                if (Array.isArray(res.entries) && res.entries.length) {
+                    panel.innerHTML = res.entries.map((net, idx) => {
+                        const ssid = net.ssid || '(Hidden SSID)';
+                        const auth = net.auth ? ` (${net.auth})` : '';
+                        const rssi = net.rssi !== undefined ? `${net.rssi} dBm` : '--';
+                        const channel = net.channel !== undefined ? net.channel : '--';
+                        const bssid = net.bssid || '';
+                        return `<div><strong>[${idx + 1}] ${ssid}</strong>${auth}<br>RSSI: ${rssi} | CH: ${channel}<br><span style="color:#94a3b8;">${bssid}</span></div>`;
+                    }).join('<hr style="border:none;border-top:1px solid rgba(255,255,255,0.08); margin:8px 0;">');
+                } else {
+                    panel.innerText = res.raw || "No networks found.";
+                }
             } else {
-                document.getElementById('quectel-wifi-results').innerText = "Scan failed.";
+                panel.innerText = (res && res.raw) ? res.raw : "Scan failed.";
             }
+        }
+
+        async function scanBluetooth() {
+            const panel = document.getElementById('bt-results');
+            panel.style.display = 'block';
+            panel.innerText = "Scanning...";
+            const res = await apiCall('/api/quectel/bt/scan', {});
+            if (res && res.success) {
+                if (Array.isArray(res.entries) && res.entries.length) {
+                    panel.innerHTML = res.entries.map((dev, idx) => {
+                        const name = dev.name || 'Unknown Device';
+                        const mac = dev.mac || '??';
+                        return `<div><strong>[${idx + 1}] ${name}</strong><br><span style="color:#94a3b8;">${mac}</span></div>`;
+                    }).join('<hr style="border:none;border-top:1px solid rgba(255,255,255,0.08); margin:8px 0;">');
+                } else {
+                    panel.innerText = res.raw || "No devices found.";
+                }
+            } else {
+                panel.innerText = (res && res.raw) ? res.raw : "Scan failed.";
+            }
+        }
+
+        async function runPing() {
+            const host = document.getElementById('ping-host').value.trim();
+            const ctx = parseInt(document.getElementById('ping-context').value, 10) || 1;
+            const timeout = parseInt(document.getElementById('ping-timeout').value, 10) || 4;
+            const count = parseInt(document.getElementById('ping-count').value, 10) || 4;
+            const panel = document.getElementById('ping-output');
+
+            if (!host) {
+                return showToast('Enter a host to ping');
+            }
+
+            panel.innerText = 'Running ping...';
+            const res = await apiCall('/api/ping', { host, context: ctx, timeout, count });
+            if (res) {
+                const text = (res.report || '').replace(/\r/g, '\n');
+                panel.innerText = text.length ? text : 'No response data received.';
+                showToast(res.success ? 'Ping complete' : (res.error || 'Ping failed'));
+            } else {
+                panel.innerText = 'Ping request failed.';
+            }
+        }
+
+        function applyPdpStatus(data) {
+            if (!data) return;
+            setText('pdp-ctx', data.ctxId ?? '--');
+            const stateEl = document.getElementById('pdp-state');
+            if (stateEl) {
+                const active = !!data.active;
+                stateEl.innerText = active ? 'Active' : 'Inactive';
+                stateEl.style.color = active ? 'var(--success-color)' : 'var(--text-secondary)';
+            }
+            setText('pdp-ip', (data.ip && data.ip !== '0.0.0.0') ? data.ip : '--');
+            const selection = data.selection || {};
+            const stored = data.stored || {};
+            const sourceLabel = selection.source ? selection.source.toUpperCase() : '--';
+            setText('pdp-source', sourceLabel);
+            setText('pdp-operator', selection.operator || '--');
+            const detectedApn = (selection.source === 'auto' && selection.apn) ? selection.apn : (selection.detected ? (selection.keyword || selection.apn || '--') : '--');
+            setText('pdp-detected-apn', detectedApn || '--');
+
+            const ctxInput = document.getElementById('pdp-context');
+            if (ctxInput) ctxInput.value = data.ctxId || 1;
+            const apnInput = document.getElementById('pdp-apn');
+            if (apnInput) apnInput.value = selection.apn || stored.apn || '';
+            const userInput = document.getElementById('pdp-user');
+            if (userInput) userInput.value = selection.user || stored.user || '';
+            const passInput = document.getElementById('pdp-pass');
+            if (passInput) passInput.value = selection.pass || stored.pass || '';
+            const authInput = document.getElementById('pdp-auth');
+            if (authInput) authInput.value = selection.auth != null ? selection.auth : (stored.auth || 0);
+            const saveCheckbox = document.getElementById('pdp-save');
+            if (saveCheckbox) saveCheckbox.checked = !!stored.hasCustom;
+        }
+
+        async function refreshPdpStatus(showToastMsg = false) {
+            const ctxVal = parseInt(document.getElementById('pdp-context').value, 10) || 1;
+            const res = await apiCall(`/api/pdp/status?ctx=${ctxVal}`);
+            if (res) {
+                applyPdpStatus(res);
+                if (showToastMsg) showToast('PDP status updated');
+            } else if (showToastMsg) {
+                showToast('Unable to refresh PDP status');
+            }
+        }
+
+        async function activatePdp() {
+            const ctxId = parseInt(document.getElementById('pdp-context').value, 10) || 1;
+            const apn = document.getElementById('pdp-apn').value.trim();
+            const user = document.getElementById('pdp-user').value.trim();
+            const pass = document.getElementById('pdp-pass').value;
+            const auth = parseInt(document.getElementById('pdp-auth').value, 10) || 0;
+            const persist = document.getElementById('pdp-save').checked;
+            const messageEl = document.getElementById('pdp-message');
+            messageEl.innerText = 'Configuring context...';
+
+            const payload = { ctxId, persist };
+            if (apn) payload.apn = apn;
+            if (user) payload.user = user;
+            if (pass) payload.pass = pass;
+            if (apn || user || pass || auth !== 0) payload.auth = auth;
+            if (lastStatusSnapshot && lastStatusSnapshot.operator) {
+                payload.operator = lastStatusSnapshot.operator;
+            }
+
+            const res = await apiCall('/api/pdp/activate', payload);
+            if (res) {
+                if (res.success) {
+                    showToast('PDP activated');
+                    messageEl.innerText = `Context ${ctxId} active.`;
+                } else {
+                    const err = res.error || 'Activation failed';
+                    messageEl.innerText = err;
+                    showToast(err);
+                }
+            } else {
+                messageEl.innerText = 'Activation request failed';
+                showToast('PDP activation failed');
+            }
+            refreshPdpStatus();
+        }
+
+        async function deactivatePdp() {
+            const ctxId = parseInt(document.getElementById('pdp-context').value, 10) || 1;
+            const messageEl = document.getElementById('pdp-message');
+            messageEl.innerText = 'Deactivating context...';
+            const res = await apiCall('/api/pdp/deactivate', { ctxId });
+            if (res && res.success) {
+                showToast('PDP deactivated');
+                messageEl.innerText = `Context ${ctxId} deactivated.`;
+            } else {
+                const err = (res && res.error) ? res.error : 'Deactivate failed';
+                messageEl.innerText = err;
+                showToast(err);
+            }
+            refreshPdpStatus();
+        }
+
+        async function clearCustomApn() {
+            if (!confirm('Clear saved APN credentials?')) return;
+            const res = await apiCall('/api/pdp/clear', {});
+            if (res && res.success) {
+                showToast('Custom APN cleared');
+                document.getElementById('pdp-save').checked = false;
+                refreshPdpStatus();
+            } else {
+                showToast('Failed to clear APN');
+            }
+        }
+
+        function appendMqttLog(message, level = 'info') {
+            const logEl = document.getElementById('mqtt-log');
+            if (!logEl) return;
+            const ts = new Date().toLocaleTimeString();
+            const color = level === 'error' ? '#f87171' : '#38bdf8';
+            logEl.innerHTML += `<div><span style="color:#64748b;">[${ts}]</span> <span style="color:${color}">${escapeHtml(message)}</span></div>`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function applyMqttStatus(status = {}) {
+            const connected = !!status.connected;
+            const connectionEl = document.getElementById('mqtt-connection');
+            if (connectionEl) {
+                connectionEl.innerText = connected ? 'Connected' : 'Disconnected';
+                connectionEl.style.color = connected ? 'var(--success-color)' : 'var(--text-secondary)';
+            }
+            setText('mqtt-server', status.server || '--');
+            setText('mqtt-port', status.port ? String(status.port) : '--');
+            setText('mqtt-ctx', status.ctxId != null ? String(status.ctxId) : '--');
+            setText('mqtt-last-topic', status.last_topic || '--');
+            setText('mqtt-last-error', status.last_error || '--');
+
+            if (status.server) document.getElementById('mqtt-host').value = status.server;
+            if (status.port) document.getElementById('mqtt-port-input').value = status.port;
+            if (status.ctxId) document.getElementById('mqtt-context').value = status.ctxId;
+        }
+
+        async function refreshMqttStatus(showToastMsg = false) {
+            const res = await apiCall('/api/mqtt/status');
+            if (res) {
+                applyMqttStatus(res);
+                if (showToastMsg) showToast('MQTT status updated');
+            } else if (showToastMsg) {
+                showToast('Unable to refresh MQTT status');
+            }
+        }
+
+        async function connectMqtt() {
+            const host = document.getElementById('mqtt-host').value.trim();
+            if (!host) return showToast('Enter broker host');
+            const port = parseInt(document.getElementById('mqtt-port-input').value, 10) || 1883;
+            const ctxId = parseInt(document.getElementById('mqtt-context').value, 10) || 1;
+            const apn = document.getElementById('mqtt-apn').value.trim();
+            const user = document.getElementById('mqtt-user').value.trim();
+            const pass = document.getElementById('mqtt-pass').value;
+            const authVal = parseInt(document.getElementById('mqtt-auth').value, 10) || 0;
+            const msgEl = document.getElementById('mqtt-message');
+            msgEl.innerText = 'Connecting to broker...';
+
+            const payload = { host, port, ctxId };
+            if (lastStatusSnapshot && lastStatusSnapshot.operator) {
+                payload.operator = lastStatusSnapshot.operator;
+            }
+            if (apn) payload.apn = apn;
+            if (user) payload.user = user;
+            if (pass) payload.pass = pass;
+            if (apn || user || pass || authVal !== 0) payload.auth = authVal;
+
+            const res = await apiCall('/api/mqtt/connect', payload);
+            if (res && res.success) {
+                msgEl.innerText = `Connected to ${host}:${port}`;
+                showToast('MQTT connected');
+                appendMqttLog(`Connected to ${host}:${port}`);
+            } else {
+                const err = (res && res.error) ? res.error : 'MQTT connect failed';
+                msgEl.innerText = err;
+                showToast(err);
+                appendMqttLog(`Connect failed: ${err}`, 'error');
+            }
+            refreshMqttStatus();
+        }
+
+        async function disconnectMqtt() {
+            const msgEl = document.getElementById('mqtt-message');
+            msgEl.innerText = 'Disconnecting...';
+            const res = await apiCall('/api/mqtt/disconnect', {});
+            if (res && res.success) {
+                showToast('MQTT disconnected');
+                appendMqttLog('Disconnected');
+                msgEl.innerText = 'Disconnected from broker.';
+            } else {
+                const err = (res && res.error) ? res.error : 'Disconnect failed';
+                msgEl.innerText = err;
+                showToast(err);
+                appendMqttLog(`Disconnect failed: ${err}`, 'error');
+            }
+            refreshMqttStatus();
+        }
+
+        async function publishMqtt() {
+            const topic = document.getElementById('mqtt-topic').value.trim();
+            const payload = document.getElementById('mqtt-payload').value;
+            if (!topic) return showToast('Enter publish topic');
+            const res = await apiCall('/api/mqtt/publish', { topic, payload });
+            if (res && res.success) {
+                showToast('Message published');
+                appendMqttLog(`Published ${topic}`);
+            } else {
+                const err = (res && res.error) ? res.error : 'Publish failed';
+                showToast(err);
+                appendMqttLog(`Publish failed: ${err}`, 'error');
+            }
+            refreshMqttStatus();
+        }
+
+        async function subscribeMqtt() {
+            const topic = document.getElementById('mqtt-sub-topic').value.trim();
+            if (!topic) return showToast('Enter subscription topic');
+            const res = await apiCall('/api/mqtt/subscribe', { topic });
+            if (res && res.success) {
+                showToast('Subscription sent');
+                appendMqttLog(`Subscribed ${topic}`);
+            } else {
+                const err = (res && res.error) ? res.error : 'Subscribe failed';
+                showToast(err);
+                appendMqttLog(`Subscribe failed: ${err}`, 'error');
+            }
+            refreshMqttStatus();
         }
 
         // Initial load
         setInterval(refreshStatus, 5000);
+        setInterval(refreshCallStatus, 4000);
+        setInterval(() => refreshDeviceSensors(), 15000);
         refreshStatus();
+        refreshCallStatus();
+        refreshDeviceSensors();
+        refreshModemInfo();
+        refreshPdpStatus();
+        refreshMqttStatus();
     </script>
 </body>
 </html>
