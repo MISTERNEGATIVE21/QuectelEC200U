@@ -334,26 +334,13 @@ class QuectelEC200U {
     bool setTCPConfig(const String &param, const String &value);
     String getSocketStatus(int connectID);
     int getTCPError();
-    // Context Configuration
-    bool configureContext(int ctxId, int type, const String &apn, const String &user, const String &pass, int auth);
 
-    // General Modem Configuration
-    bool setModemConfig(const String &param, const String &value);
-
-    // Modem Identification
-    String getIMEI();
-    String getManufacturerIdentification();
-    String getModelIdentification();
-    String getFirmwareRevision();
-    String getModuleVersion();
-    String getIMSI();
-    String getICCID();
-    String getPinRetries();
-
-    // Hardware
-    String getWifiScan();
-    String scanBluetooth();
-
+    // Asynchronous PDP Context
+    bool activatePDPAsync(int ctxId = 1);
+    bool deactivatePDPAsync(int ctxId = 1);
+    
+    
+    
   private:
     Stream *_serial;
     Stream *_debugSerial;
