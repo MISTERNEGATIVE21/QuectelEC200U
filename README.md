@@ -42,18 +42,30 @@ Here is a simple example of how to initialize the modem, connect to the network,
 ```cpp
 #include <QuectelEC200U.h>
 
-// For ESP32, you can use HardwareSerial
-HardwareSerial& SerialAT = Serial1; // Use Serial1, Serial2, etc. as available
+// Define pins for your board
+#define EC200U_RX_PIN 16
+#define EC200U_TX_PIN 17
 
-// For other boards, you might need SoftwareSerial
-// #include <SoftwareSerial.h>
-// SoftwareSerial SerialAT(7, 8); // RX, TX
-
-QuectelEC200U modem(SerialAT);
+#if defined(ARDUINO_ARCH_ESP32)
+  HardwareSerial SerialAT(1);
+  QuectelEC200U modem(SerialAT, 115200, EC200U_RX_PIN, EC200U_TX_PIN);
+#elif defined(ARDUINO_ARCH_ZEPHYR)
+  HardwareSerial& SerialAT = Serial1;
+  QuectelEC200U modem(SerialAT, 115200, EC200U_RX_PIN, EC200U_TX_PIN);
+#else
+  #include <SoftwareSerial.h>
+  SoftwareSerial SerialAT(7, 8); // RX, TX
+  QuectelEC200U modem(SerialAT);
+#endif
 
 void setup() {
   Serial.begin(115200);
-  SerialAT.begin(115200); // Or your desired baud rate
+  
+  #if defined(ARDUINO_ARCH_ZEPHYR)
+    SerialAT.begin(115200);
+  #elif !defined(ARDUINO_ARCH_ESP32)
+    SerialAT.begin(9600); // SoftwareSerial default
+  #endif
 
   Serial.println("Initializing modem...");
   if (modem.begin()) {
@@ -352,3 +364,15 @@ This library is released under the MIT License. See the [LICENSE](./LICENSE) fil
 
 ## Trademarks & Attribution
 Quectel, EC200U, and related marks are trademarks or registered trademarks of Quectel Wireless Solutions Co., Ltd. This library is unofficial and not affiliated with Quectel.
+
+## Changelog
+
+### v2.6.0
+- **New Platform Support:** Added support for **Arduino Q Uno** (Zephyr-based) using `ARDUINO_ARCH_ZEPHYR`.
+- **Optimization:** Converted library to use `const char*` for string parameters, significantly reducing memory usage and overhead.
+- **Compatibility:** Added `String` overloads to maintain backward compatibility and fix `F()` macro usage issues.
+- **Examples:** Updated all 35+ examples to support ESP32, Zephyr, and SoftwareSerial platforms automatically.
+- **Fixes:** Resolved duplicate code blocks in advanced examples.
+
+### v2.5.0
+- Initial major release with advanced features (SSL, MQTT, GNSS, etc.).

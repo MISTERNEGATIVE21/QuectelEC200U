@@ -1,6 +1,8 @@
 
 #if defined(ARDUINO_ARCH_ESP32)
   HardwareSerial SerialAT(1);
+#elif defined(ARDUINO_ARCH_ZEPHYR)
+  HardwareSerial& SerialAT = Serial1;
 #else
   #include <SoftwareSerial.h>
   SoftwareSerial SerialAT(10, 11);
@@ -71,6 +73,8 @@ void setup() {
   // Power on EC200U and start UART2 with standard pins
   EC200U_powerOn();
   Serial2.begin(115200, SERIAL_8N1, EC200U_RX_PIN, EC200U_TX_PIN);
+#elif defined(ARDUINO_ARCH_ZEPHYR)
+  SerialAT.begin(115200);
 #else
   // Start software serial (many AVR boards are more reliable at 9600)
   SerialAT.begin(9600);

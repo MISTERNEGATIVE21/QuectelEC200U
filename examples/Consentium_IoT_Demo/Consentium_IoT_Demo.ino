@@ -32,12 +32,15 @@ jgsgIVYrOxECIQCEri3dzlwRadQgtD7AzxLizE+rZbUwfBYOmIA+6kqtRw==
 #define EC200U_STATUS_PIN 2
 
 #if defined(ARDUINO_ARCH_ESP32)
-HardwareSerial SerialAT(2);
-QuectelEC200U modem(SerialAT, 115200, EC200U_RX_PIN, EC200U_TX_PIN);
+  HardwareSerial SerialAT(2);
+  QuectelEC200U modem(SerialAT, 115200, EC200U_RX_PIN, EC200U_TX_PIN);
+#elif defined(ARDUINO_ARCH_ZEPHYR)
+  HardwareSerial& SerialAT = Serial1;
+  QuectelEC200U modem(SerialAT, 115200, EC200U_RX_PIN, EC200U_TX_PIN);
 #else
-#include <SoftwareSerial.h>
-SoftwareSerial SerialAT(EC200U_RX_PIN, EC200U_TX_PIN);
-QuectelEC200U modem(SerialAT);
+  #include <SoftwareSerial.h>
+  SoftwareSerial SerialAT(EC200U_RX_PIN, EC200U_TX_PIN);
+  QuectelEC200U modem(SerialAT);
 #endif
 
 // --- Consentium IoT Configuration ---
@@ -286,6 +289,8 @@ void setup() {
 
 #if defined(ARDUINO_ARCH_ESP32)
   SerialAT.begin(115200, SERIAL_8N1, EC200U_RX_PIN, EC200U_TX_PIN);
+#elif defined(ARDUINO_ARCH_ZEPHYR)
+  SerialAT.begin(115200);
 #else
   SerialAT.begin(9600);
 #endif

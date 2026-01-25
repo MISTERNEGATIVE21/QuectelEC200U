@@ -15,6 +15,9 @@
 #if defined(ARDUINO_ARCH_ESP32)
   HardwareSerial SerialAT(1);
   QuectelEC200U modem(SerialAT, 115200, EC200U_RX_PIN, EC200U_TX_PIN);
+#elif defined(ARDUINO_ARCH_ZEPHYR)
+  HardwareSerial& SerialAT = Serial1;
+  QuectelEC200U modem(SerialAT, 115200, EC200U_RX_PIN, EC200U_TX_PIN);
 #else
   #include <SoftwareSerial.h>
   SoftwareSerial SerialAT(7, 8); // RX, TX
@@ -34,6 +37,8 @@ void setup() {
   Serial.begin(115200);
   #if defined(ARDUINO_ARCH_ESP32)
     EC200U_powerOn();
+  #elif defined(ARDUINO_ARCH_ZEPHYR)
+    SerialAT.begin(115200);
   #else
     SerialAT.begin(9600);
   #endif

@@ -10,14 +10,9 @@
 // Create a QuectelEC200U instance
 
 #if defined(ARDUINO_ARCH_ESP32)
-  
-#else
-  #include <SoftwareSerial.h>
-  SoftwareSerial modemSerial(10, 11);
-#endif
-
-#if defined(ARDUINO_ARCH_ESP32)
   HardwareSerial modemSerial(1);
+#elif defined(ARDUINO_ARCH_ZEPHYR)
+  HardwareSerial& modemSerial = Serial1;
 #else
   #include <SoftwareSerial.h>
   SoftwareSerial modemSerial(10, 11);

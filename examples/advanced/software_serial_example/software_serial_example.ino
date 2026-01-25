@@ -4,7 +4,7 @@
 
 #include <QuectelEC200U.h>
 
-#if defined(ARDUINO_ARCH_ESP32)
+#if defined(ARDUINO_ARCH_ESP32) || defined(ARDUINO_ARCH_ZEPHYR)
 // For ESP32, we use HardwareSerial
 // Define the HardwareSerial pins. These are just examples and may need to be changed based on your board.
 const int MODEM_RX_PIN = 16;
@@ -18,14 +18,9 @@ const int MODEM_PWR_PIN = 12; // Power pin for the modem
 // Create a QuectelEC200U instance for ESP32
 
 #if defined(ARDUINO_ARCH_ESP32)
-  
-#else
-  #include <SoftwareSerial.h>
-  SoftwareSerial modemSerial(10, 11);
-#endif
-
-#if defined(ARDUINO_ARCH_ESP32)
   HardwareSerial modemSerial(1);
+#elif defined(ARDUINO_ARCH_ZEPHYR)
+  HardwareSerial& modemSerial = Serial1;
 #else
   #include <SoftwareSerial.h>
   SoftwareSerial modemSerial(10, 11);
@@ -69,7 +64,7 @@ void setup() {
   
   powerOnModem();
 
-#if !defined(ARDUINO_ARCH_ESP32)
+#if !defined(ARDUINO_ARCH_ESP32) && !defined(ARDUINO_ARCH_ZEPHYR)
   // Set up modem serial communication for SoftwareSerial
   modemSerial.begin(115200);
 #endif

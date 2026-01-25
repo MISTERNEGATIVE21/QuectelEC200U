@@ -14,11 +14,24 @@
 #define RX_PIN 16
 #define TX_PIN 17
 
-HardwareSerial modemSerial(1);
-QuectelEC200U modem(modemSerial, 115200, RX_PIN, TX_PIN);
+#if defined(ARDUINO_ARCH_ESP32)
+  HardwareSerial modemSerial(1);
+  QuectelEC200U modem(modemSerial, 115200, RX_PIN, TX_PIN);
+#elif defined(ARDUINO_ARCH_ZEPHYR)
+  HardwareSerial& modemSerial = Serial1;
+  QuectelEC200U modem(modemSerial, 115200, RX_PIN, TX_PIN);
+#else
+  HardwareSerial modemSerial(1);
+  QuectelEC200U modem(modemSerial, 115200, RX_PIN, TX_PIN);
+#endif
 
 void setup() {
   Serial.begin(115200);
+#if defined(ARDUINO_ARCH_ZEPHYR)
+  modemSerial.begin(115200);
+#else
+  modemSerial.begin(115200, SERIAL_8N1, RX_PIN, TX_PIN);
+#endif
   delay(1000);
   Serial.println("Starting TCP Advanced Example...");
 
