@@ -167,26 +167,16 @@ For a detailed example, see `examples/PPPOS_Demo/PPPOS_Demo.ino`.
   }
   ```
 
-  ### Consentium IoT Example
+  ### Experimental Examples
 
-  The refreshed `examples/Consentium_IoT_Demo/Consentium_IoT_Demo.ino` sketch now performs a fully secure telemetry upload:
+  Under the `examples/experimental/` folder, you will find more complex demos that rely on third-party integrations or external libraries:
 
-  - Powers on the modem, attaches to your APN (with optional username/password), and activates PDP context 1.
-  - Uploads the Consentium IoT TLS certificate from `src/consentiumiot_cert.ca`, binds it via `sslConfigure`, and posts JSON metrics to `https://api.consentiumiot.com`.
-  - Automatically populates board metadata (MAC, firmware, signal strength) plus up to five sensor entries and prints the HTTPS response for quick debugging.
-  - Optionally sets a `receiveKey` so the sketch can call `GET /getData` and print the most recent feed after every upload (great for sanity checks or Grafana dashboards).
+  #### 1. Consentium IoT Telemetry (`Consentium_IoT_Demo`)
+  Uploads JSON telemetry data over a secure socket. It loads the Consentium IoT TLS cert, configures SSL (`sslConfigure`), and posts metrics to `https://api.consentiumiot.com`. It can optionally set a `receiveKey` to fetch recent updates immediately after sending.
 
-  Update `SEND_KEY`, `BOARD_KEY`, and the APN credentials near the top of the sketch before flashing.
+  #### 2. Telegram Bot (`Telegram_Bot_Demo`)
+  Demonstrates using the new `QuectelTelegramBot` helper class to natively interact with the Telegram API. Instead of relying on unwieldy external Wi-Fi libraries or PPPoS, this lightweight class hooks directly into the modem's built-in `httpsGet` and `httpsPost` commands. It easily processes incoming JSON updates and handles sending messages effortlessly.
 
-  #### Fetch the latest data via receiveKey
-
-  ```cpp
-  static const char RECEIVE_KEY[] = "your-receive-key";
-  fetchConsentiumFeeds(true);               // GET /getData?recents=true
-  fetchConsentiumFeeds(false,
-                       "2025-11-18T08:30:21.000Z",
-                       "2025-11-18T10:00:21.000Z"); // Time-range slice compatible with Grafana
-  ```
 
   ### WebUI Hotspot API
 
@@ -366,6 +356,11 @@ This library is released under the MIT License. See the [LICENSE](./LICENSE) fil
 Quectel, EC200U, and related marks are trademarks or registered trademarks of Quectel Wireless Solutions Co., Ltd. This library is unofficial and not affiliated with Quectel.
 
 ## Changelog
+
+### v2.7.0
+- **GPS Optimization:** Added `GNSSData` struct and robust `getGNSSData` method to parse NMEA sentences directly into simple properties.
+- **WebUI Hotspot Refactor:** Improved `WebUI_Hotspot.ino` to use struct-based GPS parsing, added automatic data connectivity on startup with stored APNs.
+- **Example Cleanup:** Removed redundant legacy examples to reduce clutter, favoring unified examples (like `HTTP_HTTPS_Unified_Demo`).
 
 ### v2.6.0
 - **New Platform Support:** Added support for **Arduino Q Uno** (Zephyr-based) using `ARDUINO_ARCH_ZEPHYR`.

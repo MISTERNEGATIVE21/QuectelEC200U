@@ -255,6 +255,24 @@ class QuectelEC200U {
     String getGNSSLocation();
     String getGNSSLocation(uint32_t fixWaitMs);
     
+    // GNSS Data Struct
+    struct GNSSData {
+        String utc_time;
+        String lat;
+        String lon;
+        String hdop;
+        String altitude;
+        String fix;
+        String cog;
+        String spkm;
+        String spkn;
+        String date;
+        String nsat;
+        bool valid;
+    };
+    GNSSData getGNSSData();
+    GNSSData getGNSSData(uint32_t fixWaitMs);
+    
     // TTS
     bool playTTS(const char* text);
     inline bool playTTS(const String &text) { return playTTS(text.c_str()); }
@@ -438,6 +456,7 @@ class QuectelEC200U {
     String _getSignalStrengthString(int signal);
     String _getRegistrationStatusString(int regStatus);
     int _parseCsvInt(const String& response, const String& tag, int index);
+    String _parseCsvString(const String& response, const String& tag, int index);
     String _extractFirstLine(const String &resp) const;
 };
 

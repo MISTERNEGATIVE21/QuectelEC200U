@@ -10,15 +10,15 @@
 #define EC200U_STATUS_PIN 2
 
 #if defined(ARDUINO_ARCH_ESP32)
-  HardwareSerial SerialAT(1);
-  QuectelEC200U modem(SerialAT, 115200, EC200U_RX_PIN, EC200U_TX_PIN);
+HardwareSerial SerialAT(1);
+QuectelEC200U modem(SerialAT, 115200, EC200U_RX_PIN, EC200U_TX_PIN);
 #elif defined(ARDUINO_ARCH_ZEPHYR)
-  HardwareSerial& SerialAT = Serial1;
-  QuectelEC200U modem(SerialAT, 115200, EC200U_RX_PIN, EC200U_TX_PIN);
+HardwareSerial &SerialAT = Serial1;
+QuectelEC200U modem(SerialAT, 115200, EC200U_RX_PIN, EC200U_TX_PIN);
 #else
-  #include <SoftwareSerial.h>
-  SoftwareSerial SerialAT(10, 11);
-  QuectelEC200U modem(SerialAT, 9600, EC200U_RX_PIN, EC200U_TX_PIN);
+#include <SoftwareSerial.h>
+SoftwareSerial SerialAT(10, 11);
+QuectelEC200U modem(SerialAT, 9600, EC200U_RX_PIN, EC200U_TX_PIN);
 #endif
 
 #if defined(ARDUINO_ARCH_ESP32)
@@ -35,7 +35,6 @@ void EC200U_powerOn() {
 }
 #endif
 
-
 void setup() {
   Serial.begin(115200);
 #if defined(ARDUINO_ARCH_ESP32)
@@ -50,12 +49,25 @@ void setup() {
   Serial.println("Starting GNSS...");
   if (modem.startGNSS()) {
     delay(2000); // wait briefly for a fix (demo)
-    Serial.println("Reading GNSS location...");
-    Serial.println(modem.getGNSSLocation());
+    Serial.println("Reading GNSS data...");
+    QuectelEC200U::GNSSData data = modem.getGNSSData(5000);
+    if (data.valid) {
+      Serial.print("Latitude: ");
+      Serial.println(data.lat);
+      Serial.print("Longitude: ");
+      Serial.println(data.lon);
+      Serial.print("Altitude: ");
+      Serial.println(data.altitude);
+      Serial.print("Time: ");
+      Serial.println(data.utc_time);
+      Serial.print("Satellites: ");
+      Serial.println(data.nsat);
+    } else {
+      Serial.println("Failed to get a valid GPS fix within 5 seconds.");
+    }
   } else {
     Serial.println("Failed to start GNSS");
   }
 }
 
-void loop() {
-}
+void loop() {}

@@ -1,36 +1,35 @@
 /*
   WebUI Hotspot Example for Quectel EC200U
-  
-  This example turns the ESP32 into a standalone Wi-Fi Hotspot with a beautiful Web UI
-  to control the Quectel EC200U modem.
-  Features:
+
+  This example turns the ESP32 into a standalone Wi-Fi Hotspot with a beautiful
+  Web UI to control the Quectel EC200U modem. Features:
   - Dashboard with Signal, Operator, and Network status
   - SMS Send/Receive
   - GPS Location
   - Voice Call Dialer
   - AT Command Terminal
   - TCP Test Tool
-  
+
   Hardware:
   - ESP32 Board
   - Quectel EC200U Module connected via UART
-  
+
   Dependencies:
   - ArduinoJson
   - QuectelEC200U
 */
-#include <WiFi.h>
-#include <WebServer.h>
+#include "index_html.h"
+#include <ArduinoJson.h>
 #include <DNSServer.h>
 #include <Preferences.h>
-#include <ArduinoJson.h>
 #include <QuectelEC200U.h>
-#include "index_html.h"
+#include <WebServer.h>
+#include <WiFi.h>
 
 // --- Configuration ---
 // --- Configuration ---
-const char* ap_ssid = "Quectel_Manager";
-const char* ap_password = "password";
+const char *ap_ssid = "Quectel_Manager";
+const char *ap_password = "password";
 
 Preferences preferences;
 
@@ -51,28 +50,27 @@ DNSServer dnsServer;
 int currentSocketId = -1;
 
 struct ApnProfile {
-  const char* keyword;
-  const char* apn;
-  const char* user;
-  const char* pass;
+  const char *keyword;
+  const char *apn;
+  const char *user;
+  const char *pass;
   int auth;
 };
 
 static const ApnProfile APN_PROFILES[] = {
-  {"jio", "jionet", "", "", 0},
-  {"reliance", "jionet", "", "", 0},
-  {"airtel", "airtelgprs.com", "", "", 0},
-  {"vodafone", "www", "", "", 0},
-  {"idea", "www", "", "", 0},
-  {" vi", "www", "", "", 0},
-  {"bsnl", "bsnlnet", "", "", 0},
-  {"docomo", "tatadocomo.com", "", "", 0},
-  {"mtnl", "mtnl.net", "", "", 0},
-  {"telstra", "telstra.internet", "", "", 0},
-  {"t-mobile", "fast.t-mobile.com", "", "", 0},
-  {"att", "phone", "", "", 0},
-  {"rogers", "internet.com", "", "", 0}
-};
+    {"jio", "jionet", "", "", 0},
+    {"reliance", "jionet", "", "", 0},
+    {"airtel", "airtelgprs.com", "", "", 0},
+    {"vodafone", "www", "", "", 0},
+    {"idea", "www", "", "", 0},
+    {" vi", "www", "", "", 0},
+    {"bsnl", "bsnlnet", "", "", 0},
+    {"docomo", "tatadocomo.com", "", "", 0},
+    {"mtnl", "mtnl.net", "", "", 0},
+    {"telstra", "telstra.internet", "", "", 0},
+    {"t-mobile", "fast.t-mobile.com", "", "", 0},
+    {"att", "phone", "", "", 0},
+    {"rogers", "internet.com", "", "", 0}};
 
 struct ApnDetection {
   bool found;
@@ -122,11 +120,13 @@ struct BatteryInfo {
 // --- Helper Functions ---
 
 void loadApnPreferences();
-void saveApnPreferences(const String &apn, const String &user, const String &pass, int auth);
+void saveApnPreferences(const String &apn, const String &user,
+                        const String &pass, int auth);
 void clearApnPreferences();
 ApnDetection detectApnProfile(const String &operatorName);
 ApnSelection getApnSelection(const String &operatorHint = String());
-bool configureContextWithApn(int ctxId, const String &apn, const String &user, const String &pass, int auth);
+bool configureContextWithApn(int ctxId, const String &apn, const String &user,
+                             const String &pass, int auth);
 BatteryInfo parseBatteryInfo(const String &raw);
 void appendCallEntries(const String &raw, JsonArray &entries);
 
@@ -143,7 +143,8 @@ void loadApnPreferences() {
   storedApn.hasCustom = storedApn.apn.length() > 0;
 }
 
-void saveApnPreferences(const String &apn, const String &user, const String &pass, int auth) {
+void saveApnPreferences(const String &apn, const String &user,
+                        const String &pass, int auth) {
   preferences.begin("cellular", false);
   preferences.putString("apn", apn);
   preferences.putString("user", user);
@@ -182,7 +183,8 @@ ApnDetection detectApnProfile(const String &operatorName) {
   for (const auto &profile : APN_PROFILES) {
     String keyword(profile.keyword);
     keyword.toLowerCase();
-    if (keyword.length() == 0) continue;
+    if (keyword.length() == 0)
+      continue;
     if (lower.indexOf(keyword) != -1) {
       detection.found = true;
       detection.apn = profile.apn;
@@ -229,7 +231,8 @@ ApnSelection getApnSelection(const String &operatorHint) {
   return selection;
 }
 
-bool configureContextWithApn(int ctxId, const String &apn, const String &user, const String &pass, int auth) {
+bool configureContextWithApn(int ctxId, const String &apn, const String &user,
+                             const String &pass, int auth) {
   bool ctxReady = modem.configureContext(ctxId, 1, apn, user, pass, auth);
   bool pdpReady = ctxReady && modem.activatePDP(ctxId);
   return pdpReady;
@@ -251,7 +254,8 @@ BatteryInfo parseBatteryInfo(const String &raw) {
   int colon = raw.indexOf(':', tag);
   int lineStart = (colon == -1) ? tag + 5 : colon + 1;
   int lineEnd = raw.indexOf('\n', lineStart);
-  if (lineEnd == -1) lineEnd = raw.length();
+  if (lineEnd == -1)
+    lineEnd = raw.length();
 
   String line = raw.substring(lineStart, lineEnd);
   line.replace("\r", "");
@@ -290,51 +294,65 @@ void handleRoot() {
 }
 
 void handleNotFound() {
-  Serial.print(F("NotFound URI: ")); Serial.println(server.uri());
+  Serial.print(F("NotFound URI: "));
+  Serial.println(server.uri());
   server.sendHeader("Location", "/", true);
   server.send(302, "text/plain", "");
 }
 
 static const uint8_t CSQ_PERCENT_LOOKUP[31] = {
-  0, 3, 6, 9, 12, 15, 18, 21,
-  24, 28, 32, 36, 40, 44, 48, 52,
-  56, 60, 64, 68, 72, 76, 80, 84,
-  88, 91, 94, 96, 98, 99, 100
-};
+    0,  3,  6,  9,  12, 15, 18, 21, 24, 28, 32, 36, 40, 44, 48, 52,
+    56, 60, 64, 68, 72, 76, 80, 84, 88, 91, 94, 96, 98, 99, 100};
 
 static int csqToPercent(int csq) {
-  if (csq <= 0 || csq == 99) return 0;
-  if (csq >= 31) return 100;
+  if (csq <= 0 || csq == 99)
+    return 0;
+  if (csq >= 31)
+    return 100;
   return CSQ_PERCENT_LOOKUP[csq];
 }
 
 static String csqToText(int csq) {
-  if (csq < 0 || csq == 99) return F("No signal");
-  if (csq == 0) return F("< -113 dBm");
-  if (csq == 1) return F("-111 dBm");
-  if (csq == 31) return F("> -51 dBm");
+  if (csq < 0 || csq == 99)
+    return F("No signal");
+  if (csq == 0)
+    return F("< -113 dBm");
+  if (csq == 1)
+    return F("-111 dBm");
+  if (csq == 31)
+    return F("> -51 dBm");
   return String(-113 + (csq * 2)) + F(" dBm");
 }
 
 static String extractRatDetail(const String &qInfo) {
   int firstQuote = qInfo.indexOf('"');
-  if (firstQuote == -1) return "";
+  if (firstQuote == -1)
+    return "";
   int secondQuote = qInfo.indexOf('"', firstQuote + 1);
-  if (secondQuote == -1) return "";
+  if (secondQuote == -1)
+    return "";
   String detail = qInfo.substring(firstQuote + 1, secondQuote);
   detail.trim();
   return detail;
 }
 
 static String simplifyRatLabel(const String &detail) {
-  if (detail.length() == 0) return "";
+  if (detail.length() == 0)
+    return "";
   String lower = detail;
   lower.toLowerCase();
-  if (lower.indexOf("nr") != -1) return F("5G NR");
-  if (lower.indexOf("lte") != -1) return F("4G LTE");
-  if (lower.indexOf("wcdma") != -1 || lower.indexOf("umts") != -1 || lower.indexOf("hspa") != -1) return F("3G");
-  if (lower.indexOf("cdma") != -1 || lower.indexOf("td-scdma") != -1) return F("3G CDMA");
-  if (lower.indexOf("edge") != -1 || lower.indexOf("gprs") != -1 || lower.indexOf("gsm") != -1) return F("2G");
+  if (lower.indexOf("nr") != -1)
+    return F("5G NR");
+  if (lower.indexOf("lte") != -1)
+    return F("4G LTE");
+  if (lower.indexOf("wcdma") != -1 || lower.indexOf("umts") != -1 ||
+      lower.indexOf("hspa") != -1)
+    return F("3G");
+  if (lower.indexOf("cdma") != -1 || lower.indexOf("td-scdma") != -1)
+    return F("3G CDMA");
+  if (lower.indexOf("edge") != -1 || lower.indexOf("gprs") != -1 ||
+      lower.indexOf("gsm") != -1)
+    return F("2G");
   return detail;
 }
 
@@ -343,7 +361,8 @@ static void appendWifiEntries(const String &raw, JsonArray &entries) {
   int idx = 0;
   while ((idx = raw.indexOf(tag, idx)) != -1) {
     int end = raw.indexOf('\n', idx);
-    if (end == -1) end = raw.length();
+    if (end == -1)
+      end = raw.length();
     String line = raw.substring(idx + tag.length(), end);
     line.replace("\r", "");
     line.trim();
@@ -367,8 +386,10 @@ static void appendWifiEntries(const String &raw, JsonArray &entries) {
       entry["bssid"] = line.substring(thirdQuote + 1, fourthQuote);
     }
 
-    int cursor = fourthQuote != -1 ? fourthQuote + 1 : (secondQuote != -1 ? secondQuote + 1 : 0);
-    while (cursor < (int)line.length() && (line[cursor] == ',' || line[cursor] == ' ')) {
+    int cursor = fourthQuote != -1 ? fourthQuote + 1
+                                   : (secondQuote != -1 ? secondQuote + 1 : 0);
+    while (cursor < (int)line.length() &&
+           (line[cursor] == ',' || line[cursor] == ' ')) {
       cursor++;
     }
 
@@ -401,7 +422,8 @@ static void appendBluetoothEntries(const String &raw, JsonArray &entries) {
   int idx = 0;
   while ((idx = raw.indexOf(tag, idx)) != -1) {
     int end = raw.indexOf('\n', idx);
-    if (end == -1) end = raw.length();
+    if (end == -1)
+      end = raw.length();
     String line = raw.substring(idx + tag.length(), end);
     line.replace("\r", "");
     line.trim();
@@ -427,9 +449,12 @@ static void appendBluetoothEntries(const String &raw, JsonArray &entries) {
       int colonIdx = line.indexOf(':');
       if (colonIdx > 1) {
         int start = colonIdx - 2;
-        while (start > 0 && line[start - 1] != ',' && line[start - 1] != ' ') start--;
+        while (start > 0 && line[start - 1] != ',' && line[start - 1] != ' ')
+          start--;
         int endIdx = colonIdx + 1;
-        while (endIdx < (int)line.length() && line[endIdx] != ',' && line[endIdx] != ' ') endIdx++;
+        while (endIdx < (int)line.length() && line[endIdx] != ',' &&
+               line[endIdx] != ' ')
+          endIdx++;
         entry["mac"] = line.substring(start, endIdx);
       }
     }
@@ -440,13 +465,20 @@ static void appendBluetoothEntries(const String &raw, JsonArray &entries) {
 
 static String callStateToText(int state) {
   switch (state) {
-    case 0: return F("Active");
-    case 1: return F("Held");
-    case 2: return F("Dialing");
-    case 3: return F("Alerting");
-    case 4: return F("Incoming");
-    case 5: return F("Waiting");
-    default: return F("Unknown");
+  case 0:
+    return F("Active");
+  case 1:
+    return F("Held");
+  case 2:
+    return F("Dialing");
+  case 3:
+    return F("Alerting");
+  case 4:
+    return F("Incoming");
+  case 5:
+    return F("Waiting");
+  default:
+    return F("Unknown");
   }
 }
 
@@ -456,12 +488,18 @@ static String callDirectionToText(int dir) {
 
 static String callModeToText(int mode) {
   switch (mode) {
-    case 0: return F("Voice");
-    case 1: return F("Data");
-    case 2: return F("Fax");
-    case 3: return F("Voice (Alt)");
-    case 4: return F("Video");
-    default: return F("Unknown");
+  case 0:
+    return F("Voice");
+  case 1:
+    return F("Data");
+  case 2:
+    return F("Fax");
+  case 3:
+    return F("Voice (Alt)");
+  case 4:
+    return F("Video");
+  default:
+    return F("Unknown");
   }
 }
 
@@ -470,7 +508,8 @@ void appendCallEntries(const String &raw, JsonArray &entries) {
   int idx = 0;
   while ((idx = raw.indexOf(tag, idx)) != -1) {
     int end = raw.indexOf('\n', idx);
-    if (end == -1) end = raw.length();
+    if (end == -1)
+      end = raw.length();
     String line = raw.substring(idx + tag.length(), end);
     line.replace("\r", "");
     line.trim();
@@ -590,16 +629,17 @@ void handleModemInfo() {
 
 void handleSmsSend() {
   sendCorsHeaders();
-  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
-  
+  if (server.method() != HTTP_POST)
+    return server.send(405, "text/plain", "Method Not Allowed");
+
   JsonDocument doc;
   deserializeJson(doc, server.arg("plain"));
-  
-  const char* number = doc["number"];
-  const char* text = doc["text"];
-  
+
+  const char *number = doc["number"];
+  const char *text = doc["text"];
+
   bool success = modem.sendSMS(number, text);
-  
+
   JsonDocument res;
   res["success"] = success;
   String response;
@@ -610,13 +650,13 @@ void handleSmsSend() {
 void handleSmsRead() {
   sendCorsHeaders();
   int index = server.arg("index").toInt();
-  
+
   String msg = modem.readSMS(index);
-  
+
   JsonDocument res;
   res["success"] = msg.length() > 0;
   res["message"] = msg;
-  
+
   String response;
   serializeJson(res, response);
   server.send(200, "application/json", response);
@@ -624,33 +664,26 @@ void handleSmsRead() {
 
 void handleGpsLocation() {
   sendCorsHeaders();
-  
+
   // Ensure GNSS is on
   if (!modem.isGNSSOn()) {
     modem.startGNSS();
   }
-  
-  String loc = modem.getGNSSLocation();
-  // Format: <latitude>,<longitude>,...
-  // We need to parse this simple string or just return it
-  // For better JSON, let's try to parse if possible, or just send raw
-  
+
+  QuectelEC200U::GNSSData data = modem.getGNSSData(5000);
+
   JsonDocument res;
-  if (loc.length() > 0) {
+  if (data.valid) {
     res["success"] = true;
-    int firstComma = loc.indexOf(',');
-    int secondComma = loc.indexOf(',', firstComma + 1);
-    if (firstComma > 0) {
-        res["lat"] = loc.substring(0, firstComma);
-        res["lon"] = loc.substring(firstComma + 1, secondComma > 0 ? secondComma : loc.length());
-    } else {
-        res["lat"] = loc;
-        res["lon"] = "";
-    }
+    res["lat"] = data.lat;
+    res["lon"] = data.lon;
+    res["alt"] = data.altitude;
+    res["time"] = data.utc_time;
+    res["sats"] = data.nsat;
   } else {
     res["success"] = false;
   }
-  
+
   String response;
   serializeJson(res, response);
   server.send(200, "application/json", response);
@@ -658,14 +691,15 @@ void handleGpsLocation() {
 
 void handleCallDial() {
   sendCorsHeaders();
-  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
-  
+  if (server.method() != HTTP_POST)
+    return server.send(405, "text/plain", "Method Not Allowed");
+
   JsonDocument doc;
   deserializeJson(doc, server.arg("plain"));
-  const char* number = doc["number"];
-  
+  const char *number = doc["number"];
+
   bool success = modem.dial(number);
-  
+
   JsonDocument res;
   res["success"] = success;
   String response;
@@ -676,7 +710,7 @@ void handleCallDial() {
 void handleCallHangup() {
   sendCorsHeaders();
   bool success = modem.hangup();
-  
+
   JsonDocument res;
   res["success"] = success;
   String response;
@@ -686,7 +720,8 @@ void handleCallHangup() {
 
 void handleCallAnswer() {
   sendCorsHeaders();
-  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
+  if (server.method() != HTTP_POST)
+    return server.send(405, "text/plain", "Method Not Allowed");
 
   bool success = modem.answer();
   JsonDocument res;
@@ -715,12 +750,14 @@ void handleCallStatus() {
 
 void handleCallVolume() {
   sendCorsHeaders();
-  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
+  if (server.method() != HTTP_POST)
+    return server.send(405, "text/plain", "Method Not Allowed");
 
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, server.arg("plain"));
   if (err) {
-    return server.send(400, "application/json", "{\"success\":false,\"error\":\"Invalid JSON\"}");
+    return server.send(400, "application/json",
+                       "{\"success\":false,\"error\":\"Invalid JSON\"}");
   }
 
   String target = doc["target"] | "speaker";
@@ -728,7 +765,8 @@ void handleCallVolume() {
   bool isRinger = target == "ringer";
   int delta = doc["delta"] | 0;
   bool hasLevel = doc.containsKey("level");
-  int requestedLevel = doc["level"] | (isRinger ? ringerVolumeLevel : speakerVolumeLevel);
+  int requestedLevel =
+      doc["level"] | (isRinger ? ringerVolumeLevel : speakerVolumeLevel);
 
   int *store = isRinger ? &ringerVolumeLevel : &speakerVolumeLevel;
   if (hasLevel) {
@@ -738,7 +776,8 @@ void handleCallVolume() {
     *store = constrain(*store + delta, 0, 100);
   }
 
-  bool success = isRinger ? modem.setRingerVolume(*store) : modem.setSpeakerVolume(*store);
+  bool success =
+      isRinger ? modem.setRingerVolume(*store) : modem.setSpeakerVolume(*store);
   JsonDocument res;
   res["success"] = success;
   res["target"] = isRinger ? "ringer" : "speaker";
@@ -754,15 +793,16 @@ void handleCallVolume() {
 
 void handleAT() {
   sendCorsHeaders();
-  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
-  
+  if (server.method() != HTTP_POST)
+    return server.send(405, "text/plain", "Method Not Allowed");
+
   JsonDocument doc;
   deserializeJson(doc, server.arg("plain"));
   String cmd = doc["cmd"];
-  
+
   modem.sendATRaw(cmd);
   String resp = modem.readResponse(5000); // Wait up to 5s
-  
+
   JsonDocument res;
   res["response"] = resp;
   String response;
@@ -772,12 +812,14 @@ void handleAT() {
 
 void handleTcpOpen() {
   sendCorsHeaders();
-  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
-  
+  if (server.method() != HTTP_POST)
+    return server.send(405, "text/plain", "Method Not Allowed");
+
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, server.arg("plain"));
   if (err) {
-    return server.send(400, "application/json", "{\"success\":false,\"error\":\"Invalid JSON\"}");
+    return server.send(400, "application/json",
+                       "{\"success\":false,\"error\":\"Invalid JSON\"}");
   }
 
   String host = doc["host"] | "";
@@ -787,9 +829,12 @@ void handleTcpOpen() {
   String operatorHint = doc["operator"] | "";
   ApnSelection selection = getApnSelection(operatorHint);
 
-  String apn = doc.containsKey("apn") ? String((const char*)doc["apn"]) : selection.apn;
-  String user = doc.containsKey("user") ? String((const char*)doc["user"]) : selection.user;
-  String pass = doc.containsKey("pass") ? String((const char*)doc["pass"]) : selection.pass;
+  String apn =
+      doc.containsKey("apn") ? String((const char *)doc["apn"]) : selection.apn;
+  String user = doc.containsKey("user") ? String((const char *)doc["user"])
+                                        : selection.user;
+  String pass = doc.containsKey("pass") ? String((const char *)doc["pass"])
+                                        : selection.pass;
   int auth = doc.containsKey("auth") ? doc["auth"].as<int>() : selection.auth;
 
   JsonDocument res;
@@ -827,7 +872,7 @@ void handleTcpOpen() {
   apnJson["auth"] = auth;
   apnJson["source"] = doc.containsKey("apn") ? "request" : selection.source;
   apnJson["operator"] = selection.operatorName;
-  
+
   String response;
   serializeJson(res, response);
   server.send(200, "application/json", response);
@@ -841,7 +886,7 @@ void handleTcpClose() {
     success = modem.tcpClose(currentSocketId);
     currentSocketId = -1;
   }
-  
+
   JsonDocument res;
   res["success"] = success;
   if (!success) {
@@ -854,26 +899,28 @@ void handleTcpClose() {
 
 void handleTcpSend() {
   sendCorsHeaders();
-  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
-  
+  if (server.method() != HTTP_POST)
+    return server.send(405, "text/plain", "Method Not Allowed");
+
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, server.arg("plain"));
   if (err) {
-    return server.send(400, "application/json", "{\"success\":false,\"error\":\"Invalid JSON\"}");
+    return server.send(400, "application/json",
+                       "{\"success\":false,\"error\":\"Invalid JSON\"}");
   }
   String data = doc["data"] | "";
-  
+
   bool success = false;
   String tcpResponse = "";
-  
+
   if (currentSocketId != -1) {
     success = modem.tcpSend(currentSocketId, data);
     if (success) {
-        // Try to read response
-        modem.tcpRecv(currentSocketId, tcpResponse, 1024, 3000);
+      // Try to read response
+      modem.tcpRecv(currentSocketId, tcpResponse, 1024, 3000);
     }
   }
-  
+
   JsonDocument res;
   res["success"] = success;
   if (!success) {
@@ -883,7 +930,7 @@ void handleTcpSend() {
   formatted.replace("\r", "\n");
   res["response"] = formatted;
   res["raw"] = tcpResponse;
-  
+
   String response;
   serializeJson(res, response);
   server.send(200, "application/json", response);
@@ -891,24 +938,27 @@ void handleTcpSend() {
 
 void handleWifiSave() {
   sendCorsHeaders();
-  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
-  
+  if (server.method() != HTTP_POST)
+    return server.send(405, "text/plain", "Method Not Allowed");
+
   JsonDocument doc;
   deserializeJson(doc, server.arg("plain"));
   String ssid = doc["ssid"];
   String pass = doc["pass"];
-  
+
   if (ssid.length() > 0) {
     preferences.begin("wifi", false);
     preferences.putString("ssid", ssid);
     preferences.putString("pass", pass);
     preferences.end();
-    
-    server.send(200, "application/json", "{\"success\":true, \"message\":\"Saved. Rebooting...\"}");
+
+    server.send(200, "application/json",
+                "{\"success\":true, \"message\":\"Saved. Rebooting...\"}");
     delay(1000);
     ESP.restart();
   } else {
-    server.send(400, "application/json", "{\"success\":false, \"message\":\"Invalid SSID\"}");
+    server.send(400, "application/json",
+                "{\"success\":false, \"message\":\"Invalid SSID\"}");
   }
 }
 
@@ -917,19 +967,21 @@ void handleWifiForget() {
   preferences.begin("wifi", false);
   preferences.clear();
   preferences.end();
-  
-  server.send(200, "application/json", "{\"success\":true, \"message\":\"Forgot. Rebooting...\"}");
+
+  server.send(200, "application/json",
+              "{\"success\":true, \"message\":\"Forgot. Rebooting...\"}");
   delay(1000);
   ESP.restart();
 }
 
 void handleModemPowerOn() {
   sendCorsHeaders();
-  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
-  
+  if (server.method() != HTTP_POST)
+    return server.send(405, "text/plain", "Method Not Allowed");
+
   modem.powerOn(POWER_PIN);
   bool success = modem.begin();
-  
+
   JsonDocument res;
   res["success"] = success;
   res["message"] = success ? "Modem Powered On" : "Initialization Failed";
@@ -940,10 +992,11 @@ void handleModemPowerOn() {
 
 void handleModemPowerOff() {
   sendCorsHeaders();
-  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
-  
+  if (server.method() != HTTP_POST)
+    return server.send(405, "text/plain", "Method Not Allowed");
+
   bool success = modem.powerOff();
-  
+
   JsonDocument res;
   res["success"] = success;
   res["message"] = success ? "Modem Powered Off" : "Power Off Failed";
@@ -954,9 +1007,11 @@ void handleModemPowerOff() {
 
 void handleEspReboot() {
   sendCorsHeaders();
-  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
-  
-  server.send(200, "application/json", "{\"success\":true,\"message\":\"Rebooting ESP32...\"}");
+  if (server.method() != HTTP_POST)
+    return server.send(405, "text/plain", "Method Not Allowed");
+
+  server.send(200, "application/json",
+              "{\"success\":true,\"message\":\"Rebooting ESP32...\"}");
   delay(500);
   ESP.restart();
 }
@@ -966,7 +1021,8 @@ void handleQuectelWifiScan() {
   String scanResult = modem.getWifiScan();
 
   JsonDocument res;
-  bool success = scanResult.length() > 0 && scanResult.indexOf(F("ERROR")) == -1;
+  bool success =
+      scanResult.length() > 0 && scanResult.indexOf(F("ERROR")) == -1;
   String formatted = scanResult;
   formatted.replace("\r", "\n");
   res["success"] = success;
@@ -985,7 +1041,8 @@ void handleBluetoothScan() {
   String scanResult = modem.scanBluetooth();
 
   JsonDocument res;
-  bool success = scanResult.length() > 0 && scanResult.indexOf(F("ERROR")) == -1;
+  bool success =
+      scanResult.length() > 0 && scanResult.indexOf(F("ERROR")) == -1;
   String formatted = scanResult;
   formatted.replace("\r", "\n");
   res["success"] = success;
@@ -1010,7 +1067,8 @@ void handleDeviceSensors() {
   batt["percent"] = battery.percent;
   batt["status"] = battery.status;
   batt["millivolts"] = battery.millivolts;
-  batt["voltage"] = battery.millivolts > 0 ? battery.millivolts / 1000.0f : 0.0f;
+  batt["voltage"] =
+      battery.millivolts > 0 ? battery.millivolts / 1000.0f : 0.0f;
   batt["raw"] = battery.raw;
 
   JsonObject sensors = res["sensors"].to<JsonObject>();
@@ -1026,14 +1084,16 @@ void handleDeviceSensors() {
 void handlePdpStatus() {
   sendCorsHeaders();
   int ctxId = server.hasArg("ctx") ? server.arg("ctx").toInt() : 1;
-  if (ctxId <= 0) ctxId = 1;
+  if (ctxId <= 0)
+    ctxId = 1;
 
   QuectelEC200U::PDPContext ctx = modem.getPDPContext(ctxId);
   ApnSelection selection = getApnSelection();
 
   JsonDocument res;
   res["ctxId"] = ctxId;
-  bool active = ctx.cid == ctxId && ctx.p_addr.length() > 0 && ctx.p_addr != "0.0.0.0";
+  bool active =
+      ctx.cid == ctxId && ctx.p_addr.length() > 0 && ctx.p_addr != "0.0.0.0";
   res["active"] = active;
   res["ip"] = ctx.p_addr;
   res["apn"] = ctx.apn;
@@ -1067,16 +1127,19 @@ void handlePdpStatus() {
 
 void handlePdpActivate() {
   sendCorsHeaders();
-  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
+  if (server.method() != HTTP_POST)
+    return server.send(405, "text/plain", "Method Not Allowed");
 
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, server.arg("plain"));
   if (err) {
-    return server.send(400, "application/json", "{\"success\":false,\"error\":\"Invalid JSON\"}");
+    return server.send(400, "application/json",
+                       "{\"success\":false,\"error\":\"Invalid JSON\"}");
   }
 
   int ctxId = doc["ctxId"] | 1;
-  if (ctxId <= 0) ctxId = 1;
+  if (ctxId <= 0)
+    ctxId = 1;
   String operatorHint = doc["operator"] | "";
   bool clearCustomFlag = doc["clearCustom"] | false;
   bool persist = doc["persist"] | false;
@@ -1086,14 +1149,18 @@ void handlePdpActivate() {
   }
 
   ApnSelection selection = getApnSelection(operatorHint);
-  String apn = doc.containsKey("apn") ? String((const char*)doc["apn"]) : selection.apn;
-  String user = doc.containsKey("user") ? String((const char*)doc["user"]) : selection.user;
-  String pass = doc.containsKey("pass") ? String((const char*)doc["pass"]) : selection.pass;
+  String apn =
+      doc.containsKey("apn") ? String((const char *)doc["apn"]) : selection.apn;
+  String user = doc.containsKey("user") ? String((const char *)doc["user"])
+                                        : selection.user;
+  String pass = doc.containsKey("pass") ? String((const char *)doc["pass"])
+                                        : selection.pass;
   int auth = doc.containsKey("auth") ? doc["auth"].as<int>() : selection.auth;
 
   apn.trim();
   if (apn.length() == 0) {
-    return server.send(400, "application/json", "{\"success\":false,\"error\":\"APN is required\"}");
+    return server.send(400, "application/json",
+                       "{\"success\":false,\"error\":\"APN is required\"}");
   }
 
   if (persist) {
@@ -1127,16 +1194,19 @@ void handlePdpActivate() {
 
 void handlePdpDeactivate() {
   sendCorsHeaders();
-  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
+  if (server.method() != HTTP_POST)
+    return server.send(405, "text/plain", "Method Not Allowed");
 
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, server.arg("plain"));
   if (err) {
-    return server.send(400, "application/json", "{\"success\":false,\"error\":\"Invalid JSON\"}");
+    return server.send(400, "application/json",
+                       "{\"success\":false,\"error\":\"Invalid JSON\"}");
   }
 
   int ctxId = doc["ctxId"] | 1;
-  if (ctxId <= 0) ctxId = 1;
+  if (ctxId <= 0)
+    ctxId = 1;
   bool success = modem.deactivatePDP(ctxId);
 
   JsonDocument res;
@@ -1153,7 +1223,8 @@ void handlePdpDeactivate() {
 
 void handlePdpClear() {
   sendCorsHeaders();
-  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
+  if (server.method() != HTTP_POST)
+    return server.send(405, "text/plain", "Method Not Allowed");
   clearApnPreferences();
   JsonDocument res;
   res["success"] = true;
@@ -1178,7 +1249,8 @@ void handleMqttStatus() {
   server.send(200, "application/json", response);
 }
 
-static void _updateMqttState(bool connected, const String &host, int port, int ctxId, const String &error) {
+static void _updateMqttState(bool connected, const String &host, int port,
+                             int ctxId, const String &error) {
   mqttConnected = connected;
   mqttServer = connected ? host : String();
   mqttPort = connected ? port : 0;
@@ -1191,18 +1263,21 @@ static void _updateMqttState(bool connected, const String &host, int port, int c
 
 void handleMqttConnect() {
   sendCorsHeaders();
-  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
+  if (server.method() != HTTP_POST)
+    return server.send(405, "text/plain", "Method Not Allowed");
 
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, server.arg("plain"));
   if (err) {
-    return server.send(400, "application/json", "{\"success\":false,\"error\":\"Invalid JSON\"}");
+    return server.send(400, "application/json",
+                       "{\"success\":false,\"error\":\"Invalid JSON\"}");
   }
 
   String host = doc["host"] | "";
   int port = doc["port"] | 1883;
   int ctxId = doc["ctxId"] | 1;
-  if (ctxId <= 0) ctxId = 1;
+  if (ctxId <= 0)
+    ctxId = 1;
   String operatorHint = doc["operator"] | "";
 
   JsonDocument res;
@@ -1213,9 +1288,12 @@ void handleMqttConnect() {
   } else {
     ApnSelection selection = getApnSelection(operatorHint);
 
-    String apn = doc.containsKey("apn") ? String((const char*)doc["apn"]) : selection.apn;
-    String user = doc.containsKey("user") ? String((const char*)doc["user"]) : selection.user;
-    String pass = doc.containsKey("pass") ? String((const char*)doc["pass"]) : selection.pass;
+    String apn = doc.containsKey("apn") ? String((const char *)doc["apn"])
+                                        : selection.apn;
+    String user = doc.containsKey("user") ? String((const char *)doc["user"])
+                                          : selection.user;
+    String pass = doc.containsKey("pass") ? String((const char *)doc["pass"])
+                                          : selection.pass;
     int auth = doc.containsKey("auth") ? doc["auth"].as<int>() : selection.auth;
 
     apn.trim();
@@ -1231,7 +1309,8 @@ void handleMqttConnect() {
           mqttConnected = false;
         }
         connected = modem.mqttConnect(host, port);
-        _updateMqttState(connected, host, port, ctxId, connected ? "" : modem.getLastErrorString());
+        _updateMqttState(connected, host, port, ctxId,
+                         connected ? "" : modem.getLastErrorString());
       }
 
       res["success"] = ctxReady && connected;
@@ -1248,7 +1327,8 @@ void handleMqttConnect() {
       if (!ctxReady) {
         res["error"] = "Context failed";
       } else if (!connected) {
-        res["error"] = mqttLastError.length() ? mqttLastError : "MQTT connect failed";
+        res["error"] =
+            mqttLastError.length() ? mqttLastError : "MQTT connect failed";
       }
     }
   }
@@ -1264,7 +1344,8 @@ void handleMqttDisconnect() {
   if (mqttConnected) {
     success = modem.mqttDisconnect();
   }
-  _updateMqttState(false, String(), 0, mqttCtxId, success ? "" : "Disconnect failed");
+  _updateMqttState(false, String(), 0, mqttCtxId,
+                   success ? "" : "Disconnect failed");
   JsonDocument res;
   res["success"] = success;
   String response;
@@ -1274,12 +1355,14 @@ void handleMqttDisconnect() {
 
 void handleMqttPublish() {
   sendCorsHeaders();
-  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
+  if (server.method() != HTTP_POST)
+    return server.send(405, "text/plain", "Method Not Allowed");
 
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, server.arg("plain"));
   if (err) {
-    return server.send(400, "application/json", "{\"success\":false,\"error\":\"Invalid JSON\"}");
+    return server.send(400, "application/json",
+                       "{\"success\":false,\"error\":\"Invalid JSON\"}");
   }
 
   String topic = doc["topic"] | "";
@@ -1312,12 +1395,14 @@ void handleMqttPublish() {
 
 void handleMqttSubscribe() {
   sendCorsHeaders();
-  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
+  if (server.method() != HTTP_POST)
+    return server.send(405, "text/plain", "Method Not Allowed");
 
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, server.arg("plain"));
   if (err) {
-    return server.send(400, "application/json", "{\"success\":false,\"error\":\"Invalid JSON\"}");
+    return server.send(400, "application/json",
+                       "{\"success\":false,\"error\":\"Invalid JSON\"}");
   }
 
   String topic = doc["topic"] | "";
@@ -1347,12 +1432,14 @@ void handleMqttSubscribe() {
 
 void handlePing() {
   sendCorsHeaders();
-  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
+  if (server.method() != HTTP_POST)
+    return server.send(405, "text/plain", "Method Not Allowed");
 
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, server.arg("plain"));
   if (err) {
-    return server.send(400, "application/json", "{\"success\":false,\"error\":\"Invalid JSON\"}");
+    return server.send(400, "application/json",
+                       "{\"success\":false,\"error\":\"Invalid JSON\"}");
   }
 
   String host = doc["host"] | "";
@@ -1361,7 +1448,8 @@ void handlePing() {
   int count = doc["count"] | 4;
 
   if (host.length() == 0) {
-    return server.send(400, "application/json", "{\"success\":false,\"error\":\"Host required\"}");
+    return server.send(400, "application/json",
+                       "{\"success\":false,\"error\":\"Host required\"}");
   }
 
   String report;
@@ -1382,46 +1470,56 @@ void handlePing() {
 // Advanced Features Handlers
 void handleSimSwitch() {
   sendCorsHeaders();
-  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
+  if (server.method() != HTTP_POST)
+    return server.send(405, "text/plain", "Method Not Allowed");
   bool success = modem.switchSimCard();
-  server.send(200, "application/json", success ? "{\"success\":true}" : "{\"success\":false}");
+  server.send(200, "application/json",
+              success ? "{\"success\":true}" : "{\"success\":false}");
 }
 
 void handleToggleISIM() {
   sendCorsHeaders();
-  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
+  if (server.method() != HTTP_POST)
+    return server.send(405, "text/plain", "Method Not Allowed");
   bool enable = server.arg("enable") == "1";
   bool success = modem.toggleISIM(enable);
-  server.send(200, "application/json", success ? "{\"success\":true}" : "{\"success\":false}");
+  server.send(200, "application/json",
+              success ? "{\"success\":true}" : "{\"success\":false}");
 }
 
 void handleSetDSDS() {
   sendCorsHeaders();
-  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
+  if (server.method() != HTTP_POST)
+    return server.send(405, "text/plain", "Method Not Allowed");
   bool dsds = server.arg("dsds") == "1";
   bool success = modem.setDSDSMode(dsds);
-  server.send(200, "application/json", success ? "{\"success\":true}" : "{\"success\":false}");
+  server.send(200, "application/json",
+              success ? "{\"success\":true}" : "{\"success\":false}");
 }
 
 void handleBlockCalls() {
   sendCorsHeaders();
-  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
+  if (server.method() != HTTP_POST)
+    return server.send(405, "text/plain", "Method Not Allowed");
   bool enable = server.arg("enable") == "1";
   bool success = modem.blockIncomingCalls(enable);
-  server.send(200, "application/json", success ? "{\"success\":true}" : "{\"success\":false}");
+  server.send(200, "application/json",
+              success ? "{\"success\":true}" : "{\"success\":false}");
 }
 
 void handleSetUSBMode() {
   sendCorsHeaders();
-  if (server.method() != HTTP_POST) return server.send(405, "text/plain", "Method Not Allowed");
+  if (server.method() != HTTP_POST)
+    return server.send(405, "text/plain", "Method Not Allowed");
   bool success = modem.setUSBModeCDC();
-  server.send(200, "application/json", success ? "{\"success\":true}" : "{\"success\":false}");
+  server.send(200, "application/json",
+              success ? "{\"success\":true}" : "{\"success\":false}");
 }
 
 void setup() {
   Serial.begin(115200);
   loadApnPreferences();
-  
+
   // Init Modem - Try to power on but don't block indefinitely
   Serial.println("Initializing Modem...");
   // modem.powerOn(POWER_PIN); // Moved to manual control or non-blocking check
@@ -1430,27 +1528,38 @@ void setup() {
     Serial.println("Modem not responding, attempting power on...");
     modem.powerOn(POWER_PIN);
     if (modem.begin()) {
-        Serial.println("Modem initialized.");
+      Serial.println("Modem initialized.");
     } else {
-        Serial.println("Modem failed to initialize. Use Web UI to retry.");
+      Serial.println("Modem failed to initialize. Use Web UI to retry.");
     }
   } else {
     Serial.println("Modem already ready.");
   }
-  
+
+  // Attempt Data Attach if APN is stored
+  if (storedApn.hasCustom) {
+    Serial.println("Found stored APN, attempting data attach...");
+    if (modem.attachData(storedApn.apn, storedApn.user, storedApn.pass,
+                         storedApn.auth)) {
+      Serial.println("Data attached successfully!");
+    } else {
+      Serial.println("Data attachment failed.");
+    }
+  }
+
   // WiFi Setup
   preferences.begin("wifi", true);
   String ssid = preferences.getString("ssid", "");
   String pass = preferences.getString("pass", "");
   preferences.end();
-  
+
   bool connected = false;
   if (ssid.length() > 0) {
     Serial.print("Connecting to WiFi: ");
     Serial.println(ssid);
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid.c_str(), pass.c_str());
-    
+
     // Wait up to 10s
     for (int i = 0; i < 20; i++) {
       if (WiFi.status() == WL_CONNECTED) {
@@ -1462,7 +1571,7 @@ void setup() {
     }
     Serial.println();
   }
-  
+
   if (connected) {
     Serial.print("Connected! IP: ");
     Serial.println(WiFi.localIP());
@@ -1473,14 +1582,14 @@ void setup() {
     IPAddress IP = WiFi.softAPIP();
     Serial.print("AP IP address: ");
     Serial.println(IP);
-    
+
     // Start DNS Server for Captive Portal (only in AP mode)
     dnsServer.start(53, "*", IP);
   }
-  
+
   // Setup Web Server Routes
   server.on("/", handleRoot);
-  server.on("/health", [](){ server.send(200, "text/plain", "OK"); });
+  server.on("/health", []() { server.send(200, "text/plain", "OK"); });
   server.on("/api/status", handleStatus);
   server.on("/api/modem/info", handleModemInfo);
   server.on("/api/sms/send", handleSmsSend);
@@ -1513,14 +1622,14 @@ void setup() {
   server.on("/api/esp/reboot", handleEspReboot);
   server.on("/api/quectel/wifi/scan", handleQuectelWifiScan);
   server.on("/api/quectel/bt/scan", handleBluetoothScan);
-  
+
   // Advanced Features
   server.on("/api/sim/switch", handleSimSwitch);
   server.on("/api/sim/isim", handleToggleISIM);
   server.on("/api/sim/dsds", handleSetDSDS);
   server.on("/api/call/block", handleBlockCalls);
   server.on("/api/system/usb", handleSetUSBMode);
-  
+
   // Handle OPTIONS for CORS
   server.on("/api/status", HTTP_OPTIONS, handleOptions);
   server.on("/api/modem/info", HTTP_OPTIONS, handleOptions);
@@ -1555,7 +1664,7 @@ void setup() {
   server.on("/api/sim/dsds", HTTP_OPTIONS, handleOptions);
   server.on("/api/call/block", HTTP_OPTIONS, handleOptions);
   server.on("/api/system/usb", HTTP_OPTIONS, handleOptions);
-  
+
   server.onNotFound(handleNotFound);
 
   server.begin();

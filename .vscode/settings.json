@@ -1,9 +1,0 @@
-{
-    "debug.javascript.defaultRuntimeExecutable": {
-        "pwa-node": "/home/mister/.local/share/mise/shims/node"
-    },
-    "python.defaultInterpreterPath": "/home/mister/.local/share/mise/installs/python/3.14.0/bin/python",
-    "files.associations": {
-        "*.ca": "cpp"
-    }
-}

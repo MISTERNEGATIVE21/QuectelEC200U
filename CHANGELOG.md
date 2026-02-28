@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.7.0 - 2026-02-26
+- GPS Optimization: Added `GNSSData` struct and robust `getGNSSData` method to parse NMEA sentences directly into struct properties.
+- WebUI Hotspot Refactor: Improved `WebUI_Hotspot.ino` with the new struct-based GPS parsing and automatic data attachment using stored APNs on boot.
+- Example Cleanup: Removed redundant legacy examples, focusing on unified/advanced examples.
+
 ## 1.8.0 - 2025-11-28
 - WebUI Hotspot: added battery/ADC sensor card, PDP management grid, MQTT client panel, and enhanced Phone tab with answer + speaker volume controls.
 - New REST endpoints: `/api/device/sensors`, `/api/pdp/*`, `/api/mqtt/*`, and `/api/call/volume` (+ richer `/api/status` payload) so external apps can drive the modem without touching AT commands directly.

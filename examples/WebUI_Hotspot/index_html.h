@@ -402,12 +402,15 @@ const char index_html[] PROGMEM = R"rawliteral(
                         <button onclick="refreshStatus()" class="secondary">
                             <span style="margin-right: 5px;">↻</span> Refresh
                         </button>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
-                            <button onclick="powerOnModem()" style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 8px;">
-                                <span style="margin-right: 5px;">⚡</span> On
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px;">
+                            <button onclick="powerOnModem()" style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 8px; font-size: 0.85rem;">
+                                <span style="margin-right: 2px;">⚡</span> On
                             </button>
-                            <button onclick="powerOffModem()" class="danger" style="padding: 8px;">
-                                <span style="margin-right: 5px;">⭕</span> Off
+                            <button onclick="powerOffModem()" class="danger" style="padding: 8px; font-size: 0.85rem;">
+                                <span style="margin-right: 2px;">⭕</span> Off
+                            </button>
+                            <button onclick="rebootEsp()" class="secondary" style="padding: 8px; font-size: 0.85rem;">
+                                <span style="margin-right: 2px;">🔄</span> ESP
                             </button>
                         </div>
                     </div>
