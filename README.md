@@ -1,14 +1,23 @@
 # QuectelEC200U Module
 
-![EC200U circuit overview](./circuit_image.png)
+![EC200U circuit overview](./assets/circuit_image.png)
 
 Arduino library for Quectel EC200U (CN-AA firmware) providing a robust AT-command wrapper and advanced examples for easier integration of cellular connectivity into your projects.
 
 Repository: [https://github.com/MISTERNEGATIVE21/QuectelEC200U](https://github.com/MISTERNEGATIVE21/QuectelEC200U)
 
+## Where to Buy
+
+- **Sharvi Electronics ESP32-S3 with EC200U**: [Buy Here](https://sharvielectronics.com/product/esp32-s3-with-ec200u-lte-4g-and-gps-v2-0/)
+
+![Sharvi ESP32-S3 with EC200U](./assets/sharvi-ec200ucn.png)
+
 More information on Custom ESP32-S3 with EC200U: [Sharvi Electronics ESP32-S3 with EC200U](https://github.com/SharviElectronics/ESP32-S3-with-EC200U/tree/main)
 
-![Capuf EC200U-CN Module](./capuf.png)
+- **Capuf EC200U-CN Module**: [Buy Here](https://capuf.in/products/ec200u-cn-4g-lte-modem)
+
+![Capuf EC200U-CN Module](./assets/capuf.png)
+
 More information on Capuf Module: [Capuf Module](https://capuf.in/products/ec200u-cn-4g-lte-modem)
 
 ## Features
