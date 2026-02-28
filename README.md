@@ -8,7 +8,7 @@ Repository: [https://github.com/MISTERNEGATIVE21/QuectelEC200U](https://github.c
 
 ## Where to Buy
 
-- **Sharvi Electronics ESP32-S3 with EC200U**: [Buy Here](https://sharvielectronics.com/product/esp32-s3-with-ec200u-lte-4g-and-gps-v2-0/)
+- **Sharvi Electronics ESP32-S3 with EC200U**: [Buy Here](https://sharvielectronics.com/product/esp32-s3-with-ec200u-4g-lte-cat-1-wifi-bluetooth-gnss-iot-smart-modem/)
 
 ![Sharvi ESP32-S3 with EC200U](./assets/sharvi-ec200ucn.png)
 
