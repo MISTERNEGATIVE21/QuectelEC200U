@@ -15,6 +15,27 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
+// Cross-platform Serial setup macro to avoid repetitive code in examples
+#if defined(ARDUINO_ARCH_ESP32)
+  #define QUECTEL_SERIAL_PORT HardwareSerial
+  #define QUECTEL_SERIAL_INIT(name, rx, tx) HardwareSerial name(1)
+  #define QUECTEL_SERIAL_BEGIN(name, baud, rx, tx) name.begin(baud, SERIAL_8N1, rx, tx)
+#elif defined(ARDUINO_ARCH_ZEPHYR)
+  #define QUECTEL_SERIAL_PORT HardwareSerial
+  #define QUECTEL_SERIAL_INIT(name, rx, tx) HardwareSerial& name = Serial1
+  #define QUECTEL_SERIAL_BEGIN(name, baud, rx, tx) name.begin(baud)
+#else
+  #include <SoftwareSerial.h>
+  #define QUECTEL_SERIAL_PORT SoftwareSerial
+  #define QUECTEL_SERIAL_INIT(name, rx, tx) SoftwareSerial name(rx, tx)
+  #define QUECTEL_SERIAL_BEGIN(name, baud, rx, tx) name.begin(9600)
+#endif
+
+// Define if HardwareSerial is available
+#if defined(ARDUINO_ARCH_ESP32) || defined(ARDUINO_ARCH_ZEPHYR) || defined(HAVE_HWSERIAL0) || defined(HAVE_HWSERIAL1) || defined(HAVE_HWSERIAL2) || defined(HAVE_HWSERIAL3) || defined(UBRRH) || defined(UBRR0H) || defined(USBCON)
+#define QUECTEL_HAS_HARDWARE_SERIAL
+#endif
+
 // Command history for Ctrl+Z functionality
 #define MAX_HISTORY 20
 #define MAX_CMD_LENGTH 256
@@ -61,7 +82,9 @@ enum class ErrorCode {
 class QuectelEC200U {
   public:
     // HardwareSerial constructor (auto-configure on begin). On ESP32, optional RX/TX pins are supported.
+    #if defined(QUECTEL_HAS_HARDWARE_SERIAL)
     QuectelEC200U(HardwareSerial &serial, uint32_t baud = 115200, int8_t rxPin = -1, int8_t txPin = -1);
+#endif
     
     // Generic Stream constructor (for SoftwareSerial or other streams)
     QuectelEC200U(Stream &stream);

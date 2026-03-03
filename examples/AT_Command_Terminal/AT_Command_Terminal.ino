@@ -31,11 +31,7 @@
 #define EC200U_STATUS_PIN 21 // Example status pin
 
 // Global Objects
-#if defined(ARDUINO_ARCH_ZEPHYR)
-  HardwareSerial& SerialAT = Serial1;
-#else
-  HardwareSerial SerialAT(1);
-#endif
+QUECTEL_SERIAL_INIT(SerialAT, EC200U_RX_PIN, EC200U_TX_PIN);
 QuectelEC200U modem(SerialAT, 115200, EC200U_RX_PIN, EC200U_TX_PIN);
 
 // Global Variables
@@ -275,13 +271,7 @@ void setup() {
   
   // Initialize serial communication with modem
   Serial.println(F("Initializing UART communication..."));
-#if defined(ARDUINO_ARCH_ESP32)
-  SerialAT.begin(115200, SERIAL_8N1, EC200U_RX_PIN, EC200U_TX_PIN);
-#elif defined(ARDUINO_ARCH_ZEPHYR)
-  SerialAT.begin(115200);
-#else
-  SerialAT.begin(115200);
-#endif
+QUECTEL_SERIAL_BEGIN(SerialAT, 115200, EC200U_RX_PIN, EC200U_TX_PIN);
   Serial.println(F("✓ UART ready"));
   
   // Enable debug output

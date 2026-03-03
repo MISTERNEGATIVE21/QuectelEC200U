@@ -13,6 +13,7 @@
 #include "QuectelEC200U.h"
 #include <ArduinoJson.h>
 
+#if defined(QUECTEL_HAS_HARDWARE_SERIAL)
 QuectelEC200U::QuectelEC200U(HardwareSerial &serial, uint32_t baud,
                              int8_t rxPin, int8_t txPin) {
   _serial = &serial;
@@ -29,6 +30,7 @@ QuectelEC200U::QuectelEC200U(HardwareSerial &serial, uint32_t baud,
   _historyCount = 0;
   _historyIndex = 0;
 }
+#endif
 
 QuectelEC200U::QuectelEC200U(Stream &stream) {
   _serial = &stream;
