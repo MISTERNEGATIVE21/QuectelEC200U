@@ -21,12 +21,19 @@
 #define EC200U_PW_KEY_PIN 10
 
 // Global Objects
-#if defined(ARDUINO_ARCH_ZEPHYR)
+#if defined(ARDUINO_ARCH_ESP32)
+  HardwareSerial SerialAT(1);
+#elif defined(ARDUINO_ARCH_ZEPHYR)
   HardwareSerial& SerialAT = Serial1;
 #else
-  HardwareSerial SerialAT(1);
+  #include <SoftwareSerial.h>
+  SoftwareSerial SerialAT(EC200U_RX_PIN, EC200U_TX_PIN);
 #endif
+#if defined(ARDUINO_ARCH_ESP32)
 QuectelEC200U modem(SerialAT, 115200, EC200U_RX_PIN, EC200U_TX_PIN);
+#else
+QuectelEC200U modem(SerialAT);
+#endif
 
 void setup() {
   Serial.begin(115200);
@@ -39,11 +46,12 @@ void setup() {
   modem.powerOn(EC200U_PW_KEY_PIN);
   
   // Initialize UART
-  // Initialize UART
 #if defined(ARDUINO_ARCH_ZEPHYR)
   SerialAT.begin(115200);
-#else
+#elif defined(ARDUINO_ARCH_ESP32)
   SerialAT.begin(115200, SERIAL_8N1, EC200U_RX_PIN, EC200U_TX_PIN);
+#else
+  SerialAT.begin(9600);
 #endif
   modem.enableDebug(Serial);
   

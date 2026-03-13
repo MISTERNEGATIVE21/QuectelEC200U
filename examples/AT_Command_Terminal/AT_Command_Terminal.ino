@@ -32,7 +32,11 @@
 
 // Global Objects
 QUECTEL_SERIAL_INIT(SerialAT, EC200U_RX_PIN, EC200U_TX_PIN);
+#if defined(ARDUINO_ARCH_ESP32) || defined(ARDUINO_ARCH_ZEPHYR)
 QuectelEC200U modem(SerialAT, 115200, EC200U_RX_PIN, EC200U_TX_PIN);
+#else
+QuectelEC200U modem(SerialAT);
+#endif
 
 // Global Variables
 String inputBuffer = "";
@@ -43,6 +47,14 @@ bool terminalActive = true;
 // Power on the modem (one-time operation)
 void powerOnModem() {
 #if defined(ARDUINO_ARCH_ESP32)
+  pinMode(EC200U_PW_KEY_PIN, OUTPUT);
+  pinMode(EC200U_STATUS_PIN, INPUT);
+  if (digitalRead(EC200U_STATUS_PIN) == LOW) {
+    digitalWrite(EC200U_PW_KEY_PIN, LOW);
+    delay(500);
+    digitalWrite(EC200U_PW_KEY_PIN, HIGH);
+    delay(3000);
+  }
 #endif
 }
 

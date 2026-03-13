@@ -272,6 +272,11 @@ bool QuectelEC200U::sendAT(const char *cmd, const char *expect,
 
 bool QuectelEC200U::sendAT(const char *cmd) { return sendAT(cmd, "OK", 1000); }
 
+bool QuectelEC200U::sendCommand(const char *cmd, const char *expected,
+                                uint32_t timeout) {
+  return sendAT(cmd, expected, timeout);
+}
+
 [[deprecated("Use readResponse(char*, size_t, uint32_t) instead")]] String
 QuectelEC200U::readResponse(uint32_t timeout) {
   char buffer[256];
