@@ -17,16 +17,19 @@
   HardwareSerial& modemSerial = Serial1;
   QuectelEC200U modem(modemSerial, 115200, RX_PIN, TX_PIN);
 #else
-  HardwareSerial modemSerial(1);
-  QuectelEC200U modem(modemSerial, 115200, RX_PIN, TX_PIN);
+  #include <SoftwareSerial.h>
+  SoftwareSerial modemSerial(RX_PIN, TX_PIN);
+  QuectelEC200U modem(modemSerial);
 #endif
 
 void setup() {
   Serial.begin(115200);
 #if defined(ARDUINO_ARCH_ZEPHYR)
   modemSerial.begin(115200);
-#else
+#elif defined(ARDUINO_ARCH_ESP32)
   modemSerial.begin(115200, SERIAL_8N1, RX_PIN, TX_PIN);
+#else
+  modemSerial.begin(9600);
 #endif
   delay(1000);
   Serial.println("Starting Modem Config Example...");

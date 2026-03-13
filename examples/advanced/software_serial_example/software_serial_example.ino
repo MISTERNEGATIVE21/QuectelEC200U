@@ -21,9 +21,6 @@ const int MODEM_PWR_PIN = 12; // Power pin for the modem
   HardwareSerial modemSerial(1);
 #elif defined(ARDUINO_ARCH_ZEPHYR)
   HardwareSerial& modemSerial = Serial1;
-#else
-  #include <SoftwareSerial.h>
-  SoftwareSerial modemSerial(10, 11);
 #endif
 QuectelEC200U modem(modemSerial, 115200, MODEM_RX_PIN, MODEM_TX_PIN);
 
