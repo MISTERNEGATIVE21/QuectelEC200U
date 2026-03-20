@@ -22,14 +22,39 @@
 #include <ArduinoJson.h>
 #include <DNSServer.h>
 #include <QuectelEC200U.h>
+// --- Configuration ---
+const char *ap_ssid = "Quectel_Manager";
+const char *ap_password = "password";
+
+// Modem Pins (Adjust for your board)
+#define RX_PIN 18
+#define TX_PIN 17
+#define POWER_PIN 10 // Optional power pin
+
 #if defined(ESP32)
 #include <Preferences.h>
 #include <WebServer.h>
 #include <WiFi.h>
+
+// Web Server on port 80
+WebServer server(80);
+
+// Initialize Modem
+HardwareSerial modemSerial(1);
+QuectelEC200U modem(modemSerial, 115200, RX_PIN, TX_PIN);
+
 #elif defined(ESP8266)
 #include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
 #include <SoftwareSerial.h>
+
+// Web Server on port 80
+ESP8266WebServer server(80);
+
+// Initialize Modem
+SoftwareSerial modemSerial(RX_PIN, TX_PIN);
+QuectelEC200U modem(modemSerial);
+
 class Preferences {
 public:
   void begin(const char* name, bool readOnly) {}
@@ -42,24 +67,7 @@ public:
 };
 #endif
 
-// --- Configuration ---
-// --- Configuration ---
-const char *ap_ssid = "Quectel_Manager";
-const char *ap_password = "password";
-
 Preferences preferences;
-
-// Modem Pins (Adjust for your board)
-#define RX_PIN 18
-#define TX_PIN 17
-#define POWER_PIN 10 // Optional power pin
-
-// Initialize Modem
-HardwareSerial modemSerial(1);
-QuectelEC200U modem(modemSerial, 115200, RX_PIN, TX_PIN);
-
-// Web Server on port 80
-WebServer server(80);
 DNSServer dnsServer;
 
 // Global variables
@@ -1534,6 +1542,9 @@ void handleSetUSBMode() {
 
 void setup() {
   Serial.begin(115200);
+#if defined(ESP8266)
+  modemSerial.begin(115200);
+#endif
   loadApnPreferences();
 
   // Init Modem - Try to power on but don't block indefinitely
