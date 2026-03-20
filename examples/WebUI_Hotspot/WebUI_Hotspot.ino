@@ -21,10 +21,26 @@
 #include "index_html.h"
 #include <ArduinoJson.h>
 #include <DNSServer.h>
-#include <Preferences.h>
 #include <QuectelEC200U.h>
+#if defined(ESP32)
+#include <Preferences.h>
 #include <WebServer.h>
 #include <WiFi.h>
+#elif defined(ESP8266)
+#include <ESP8266WebServer.h>
+#include <ESP8266WiFi.h>
+#include <SoftwareSerial.h>
+class Preferences {
+public:
+  void begin(const char* name, bool readOnly) {}
+  void end() {}
+  void clear() {}
+  String getString(const char* key, String defaultVal) { return defaultVal; }
+  int getInt(const char* key, int defaultVal) { return defaultVal; }
+  void putString(const char* key, String val) {}
+  void putInt(const char* key, int val) {}
+};
+#endif
 
 // --- Configuration ---
 // --- Configuration ---
