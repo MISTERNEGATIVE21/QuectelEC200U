@@ -481,6 +481,9 @@ class QuectelEC200U {
     int _parseCsvInt(const String& response, const String& tag, int index);
     String _parseCsvString(const String& response, const String& tag, int index);
     String _extractFirstLine(const String &resp) const;
+    String _utf8ToUcs2Hex(const String &utf8Str);
+    String _ucs2HexToUtf8(const String &hexStr);
+    bool _isHexStr(const String &str);
 };
 
 #endif

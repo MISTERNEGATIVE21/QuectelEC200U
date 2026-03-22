@@ -822,37 +822,72 @@ bool QuectelEC200U::isSimReady() { return sendAT("AT+CPIN?", "READY"); }
 
 // ===== SMS =====
 bool QuectelEC200U::sendSMS(const char *number, const char *text) {
-  if (!sendAT("AT+CMGF=1"))
-    return false;
-  if (!sendAT(String("AT+CMGS=\"") + number + "\"", ">", 2000))
-    return false;
-  _serial->print(text);
-  _serial->write(26);
+  if (!sendAT("AT+CMGF=1")) return false;
 
-  // Wait for "OK"
+  // Scan for non-ASCII characters.
+  bool isAscii = true;
+  for (int i = 0; text[i] != '\0'; i++) {
+    if ((unsigned char)text[i] > 127) {
+      isAscii = false;
+      break;
+    }
+  }
+
+  if (isAscii) {
+    // Plain English: use the standard GSM character set.
+    sendAT(F("AT+CSCS=\"GSM\""));
+    sendAT(F("AT+CSMP=17,167,0,0")); // DCS = 0 (7-bit)
+    if (!sendAT(String("AT+CMGS=\"") + number + "\"", ">", 2000)) return false;
+    _serial->print(text);
+    _serial->write(26);
+  } else {
+    // Contains Japanese: both the phone number and the message body must be converted to UCS2 hex strings, and the DCS should be set to 8.
+    String numHex = _utf8ToUcs2Hex(number);
+    String msgHex = _utf8ToUcs2Hex(text);
+
+    sendAT(F("AT+CSCS=\"UCS2\""));
+    sendAT(F("AT+CSMP=17,167,0,8")); // DCS = 8 (UCS2)
+
+    if (!sendAT(String("AT+CMGS=\"") + numHex + "\"", ">", 2000)) {
+      sendAT(F("AT+CSCS=\"GSM\"")); // Restore the configuration upon failure.
+      return false;
+    }
+    _serial->print(msgHex);
+    _serial->write(26);
+  }
+
+  // Waiting for the result to be sent
   String resp = readResponse(10000);
+  
+  // Forcefully restore the default GSM character set to prevent subsequent AT command parsing crashes caused by the module returning hexadecimal strings.
+  sendAT(F("AT+CSCS=\"GSM\"")); 
+  
   return resp.indexOf("OK") != -1;
 }
 
 String QuectelEC200U::readSMS(int index) {
   _serial->println("AT+CMGR=" + String(index));
   String resp = readResponse(2000);
-  // Response is typically: +CMGR: <stat>,<oa>,<alpha>,<scts><CR><LF><data>
-  // OK
+  
   String tag = F("+CMGR: ");
   int tag_index = resp.indexOf(tag);
-  if (tag_index == -1)
-    return "";
+  if (tag_index == -1) return "";
 
   int sms_start = resp.indexOf('\n', tag_index);
-  if (sms_start == -1)
-    return "";
+  if (sms_start == -1) return "";
 
   int sms_end = resp.indexOf(F("\r\nOK\r\n"), sms_start);
-  if (sms_end == -1)
-    return "";
+  if (sms_end == -1) return "";
 
-  return resp.substring(sms_start + 1, sms_end);
+  String payload = resp.substring(sms_start + 1, sms_end);
+  payload.trim();
+
+  // If the received text message is encoded in pure hexadecimal format as UCS2, it will be automatically converted to UTF-8 Japanese.
+  if (_isHexStr(payload)) {
+    return _ucs2HexToUtf8(payload);
+  }
+
+  return payload;
 }
 
 // ===== HTTP =====
@@ -2212,4 +2247,61 @@ bool QuectelEC200U::configureGNSSURC(bool enable) {
   String cmd = F("AT+QGPSCFG=\"urc\",");
   cmd += enable ? "1" : "0";
   return sendAT(cmd);
+}
+
+// ===== SMS character set conversion helper function =====
+String QuectelEC200U::_utf8ToUcs2Hex(const String &utf8Str) {
+  String hexStr = "";
+  hexStr.reserve(utf8Str.length() * 4); 
+  int i = 0;
+  while (i < utf8Str.length()) {
+    unsigned char c = utf8Str[i];
+    uint16_t ucs2 = 0;
+    if (c < 0x80) { // 1 byte ASCII
+      ucs2 = c;
+      i++;
+    } else if ((c & 0xE0) == 0xC0) { // 2 byte
+      ucs2 = ((c & 0x1F) << 6) | (utf8Str[i + 1] & 0x3F);
+      i += 2;
+    } else if ((c & 0xF0) == 0xE0) { // 3 byte
+      ucs2 = ((c & 0x0F) << 12) | ((utf8Str[i + 1] & 0x3F) << 6) | (utf8Str[i + 2] & 0x3F);
+      i += 3;
+    } else {
+      ucs2 = 0x003F; // Replace any 4-byte characters or abnormal characters with '?'
+      i += 4;
+    }
+    char buf[5];
+    sprintf(buf, "%04X", ucs2);
+    hexStr += buf;
+  }
+  return hexStr;
+}
+
+String QuectelEC200U::_ucs2HexToUtf8(const String &hexStr) {
+  String utf8Str = "";
+  utf8Str.reserve(hexStr.length() / 2);
+  for (int i = 0; i < hexStr.length(); i += 4) {
+    String hexChar = hexStr.substring(i, i + 4);
+    uint16_t ucs2 = strtol(hexChar.c_str(), NULL, 16);
+    if (ucs2 < 0x80) {
+      utf8Str += (char)ucs2;
+    } else if (ucs2 < 0x800) {
+      utf8Str += (char)(0xC0 | (ucs2 >> 6));
+      utf8Str += (char)(0x80 | (ucs2 & 0x3F));
+    } else {
+      utf8Str += (char)(0xE0 | (ucs2 >> 12));
+      utf8Str += (char)(0x80 | ((ucs2 >> 6) & 0x3F));
+      utf8Str += (char)(0x80 | (ucs2 & 0x3F));
+    }
+  }
+  return utf8Str;
+}
+
+bool QuectelEC200U::_isHexStr(const String &str) {
+  if (str.length() == 0 || str.length() % 4 != 0) return false;
+  for (int i = 0; i < str.length(); i++) {
+    char c = str[i];
+    if (!isxdigit(c)) return false;
+  }
+  return true;
 }
