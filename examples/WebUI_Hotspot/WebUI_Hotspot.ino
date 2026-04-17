@@ -65,6 +65,28 @@ public:
   void putString(const char* key, String val) {}
   void putInt(const char* key, int val) {}
 };
+
+#elif defined(ARDUINO_ARCH_RP2040) || defined(ARDUINO_ARCH_RP2350)
+#include <WebServer.h>
+#include <WiFi.h>
+
+// Web Server on port 80
+WebServer server(80);
+
+// Initialize Modem
+SerialUART& modemSerial = Serial1;
+QuectelEC200U modem(modemSerial);
+
+class Preferences {
+public:
+  void begin(const char* name, bool readOnly) {}
+  void end() {}
+  void clear() {}
+  String getString(const char* key, String defaultVal) { return defaultVal; }
+  int getInt(const char* key, int defaultVal) { return defaultVal; }
+  void putString(const char* key, String val) {}
+  void putInt(const char* key, int val) {}
+};
 #endif
 
 Preferences preferences;
@@ -395,7 +417,7 @@ static void appendWifiEntries(const String &raw, JsonArray &entries) {
       continue;
     }
 
-    JsonObject entry = entries.createNestedObject();
+    JsonObject entry = entries.add<JsonObject>();
     entry["raw"] = line;
 
     int firstQuote = line.indexOf('"');
@@ -456,7 +478,7 @@ static void appendBluetoothEntries(const String &raw, JsonArray &entries) {
       continue;
     }
 
-    JsonObject entry = entries.createNestedObject();
+    JsonObject entry = entries.add<JsonObject>();
     entry["raw"] = line;
 
     int nameEnd = line.lastIndexOf('"');
@@ -574,7 +596,7 @@ void appendCallEntries(const String &raw, JsonArray &entries) {
       }
     }
 
-    JsonObject entry = entries.createNestedObject();
+    JsonObject entry = entries.add<JsonObject>();
     entry["index"] = values[0];
     entry["direction_code"] = values[1];
     entry["state_code"] = values[2];
@@ -762,7 +784,7 @@ void handleCallStatus() {
   JsonDocument res;
   res["success"] = true;
   res["raw"] = raw;
-  JsonArray entries = res.createNestedArray("entries");
+  JsonArray entries = res["entries"].to<JsonArray>();
   appendCallEntries(raw, entries);
   res["active"] = entries.size() > 0;
   res["speaker_volume"] = speakerVolumeLevel;
@@ -788,7 +810,7 @@ void handleCallVolume() {
   target.toLowerCase();
   bool isRinger = target == "ringer";
   int delta = doc["delta"] | 0;
-  bool hasLevel = doc.containsKey("level");
+  bool hasLevel = !doc["level"].isNull();
   int requestedLevel =
       doc["level"] | (isRinger ? ringerVolumeLevel : speakerVolumeLevel);
 
@@ -854,12 +876,12 @@ void handleTcpOpen() {
   ApnSelection selection = getApnSelection(operatorHint);
 
   String apn =
-      doc.containsKey("apn") ? String((const char *)doc["apn"]) : selection.apn;
-  String user = doc.containsKey("user") ? String((const char *)doc["user"])
+      !doc["apn"].isNull() ? String((const char *)doc["apn"]) : selection.apn;
+  String user = !doc["user"].isNull() ? String((const char *)doc["user"])
                                         : selection.user;
-  String pass = doc.containsKey("pass") ? String((const char *)doc["pass"])
+  String pass = !doc["pass"].isNull() ? String((const char *)doc["pass"])
                                         : selection.pass;
-  int auth = doc.containsKey("auth") ? doc["auth"].as<int>() : selection.auth;
+  int auth = !doc["auth"].isNull() ? doc["auth"].as<int>() : selection.auth;
 
   JsonDocument res;
 
@@ -894,7 +916,7 @@ void handleTcpOpen() {
   apnJson["user"] = user;
   apnJson["pass"] = pass;
   apnJson["auth"] = auth;
-  apnJson["source"] = doc.containsKey("apn") ? "request" : selection.source;
+  apnJson["source"] = !doc["apn"].isNull() ? "request" : selection.source;
   apnJson["operator"] = selection.operatorName;
 
   String response;
@@ -979,7 +1001,11 @@ void handleWifiSave() {
     server.send(200, "application/json",
                 "{\"success\":true, \"message\":\"Saved. Rebooting...\"}");
     delay(1000);
+#if defined(ARDUINO_ARCH_RP2040) || defined(ARDUINO_ARCH_RP2350)
+    rp2040.reboot();
+#else
     ESP.restart();
+#endif
   } else {
     server.send(400, "application/json",
                 "{\"success\":false, \"message\":\"Invalid SSID\"}");
@@ -995,7 +1021,11 @@ void handleWifiForget() {
   server.send(200, "application/json",
               "{\"success\":true, \"message\":\"Forgot. Rebooting...\"}");
   delay(1000);
+#if defined(ARDUINO_ARCH_RP2040) || defined(ARDUINO_ARCH_RP2350)
+  rp2040.reboot();
+#else
   ESP.restart();
+#endif
 }
 
 void handleModemPowerOn() {
@@ -1037,7 +1067,11 @@ void handleEspReboot() {
   server.send(200, "application/json",
               "{\"success\":true,\"message\":\"Rebooting ESP32...\"}");
   delay(500);
+#if defined(ARDUINO_ARCH_RP2040) || defined(ARDUINO_ARCH_RP2350)
+  rp2040.reboot();
+#else
   ESP.restart();
+#endif
 }
 
 void handleQuectelWifiScan() {
@@ -1052,7 +1086,7 @@ void handleQuectelWifiScan() {
   res["success"] = success;
   res["raw"] = formatted;
   if (success) {
-    JsonArray entries = res.createNestedArray("entries");
+    JsonArray entries = res["entries"].to<JsonArray>();
     appendWifiEntries(formatted, entries);
   }
   String response;
@@ -1072,7 +1106,7 @@ void handleBluetoothScan() {
   res["success"] = success;
   res["raw"] = formatted;
   if (success) {
-    JsonArray entries = res.createNestedArray("entries");
+    JsonArray entries = res["entries"].to<JsonArray>();
     appendBluetoothEntries(formatted, entries);
   }
   String response;
@@ -1174,12 +1208,12 @@ void handlePdpActivate() {
 
   ApnSelection selection = getApnSelection(operatorHint);
   String apn =
-      doc.containsKey("apn") ? String((const char *)doc["apn"]) : selection.apn;
-  String user = doc.containsKey("user") ? String((const char *)doc["user"])
+      !doc["apn"].isNull() ? String((const char *)doc["apn"]) : selection.apn;
+  String user = !doc["user"].isNull() ? String((const char *)doc["user"])
                                         : selection.user;
-  String pass = doc.containsKey("pass") ? String((const char *)doc["pass"])
+  String pass = !doc["pass"].isNull() ? String((const char *)doc["pass"])
                                         : selection.pass;
-  int auth = doc.containsKey("auth") ? doc["auth"].as<int>() : selection.auth;
+  int auth = !doc["auth"].isNull() ? doc["auth"].as<int>() : selection.auth;
 
   apn.trim();
   if (apn.length() == 0) {
@@ -1312,13 +1346,13 @@ void handleMqttConnect() {
   } else {
     ApnSelection selection = getApnSelection(operatorHint);
 
-    String apn = doc.containsKey("apn") ? String((const char *)doc["apn"])
+    String apn = !doc["apn"].isNull() ? String((const char *)doc["apn"])
                                         : selection.apn;
-    String user = doc.containsKey("user") ? String((const char *)doc["user"])
+    String user = !doc["user"].isNull() ? String((const char *)doc["user"])
                                           : selection.user;
-    String pass = doc.containsKey("pass") ? String((const char *)doc["pass"])
+    String pass = !doc["pass"].isNull() ? String((const char *)doc["pass"])
                                           : selection.pass;
-    int auth = doc.containsKey("auth") ? doc["auth"].as<int>() : selection.auth;
+    int auth = !doc["auth"].isNull() ? doc["auth"].as<int>() : selection.auth;
 
     apn.trim();
     if (apn.length() == 0) {
@@ -1345,7 +1379,7 @@ void handleMqttConnect() {
       apnJson["user"] = user;
       apnJson["pass"] = pass;
       apnJson["auth"] = auth;
-      apnJson["source"] = doc.containsKey("apn") ? "request" : selection.source;
+      apnJson["source"] = !doc["apn"].isNull() ? "request" : selection.source;
       apnJson["operator"] = selection.operatorName;
 
       if (!ctxReady) {
@@ -1543,6 +1577,10 @@ void handleSetUSBMode() {
 void setup() {
   Serial.begin(115200);
 #if defined(ESP8266)
+  modemSerial.begin(115200);
+#elif defined(ARDUINO_ARCH_RP2040) || defined(ARDUINO_ARCH_RP2350)
+  modemSerial.setRX(RX_PIN);
+  modemSerial.setTX(TX_PIN);
   modemSerial.begin(115200);
 #endif
   loadApnPreferences();

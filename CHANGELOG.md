@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.5.0 - 2026-04-17
+- Hardware Support: Added Raspberry Pi Pico W, Pico W2, and Pico 2W support (`ARDUINO_ARCH_RP2040` and `ARDUINO_ARCH_RP2350`) compatible with Earle Philhower's core.
+- WebUI Hotspot: Updated the example to natively support Pico architectures featuring seamless `SerialUART` mapping and WebServer imports.
+
+### What's Changed
+- Added Japanese support for SMS messages by @GWan1234 in #3
+
+### New Contributors
+- @GWan1234 made their first contribution in #3
+
+**Full Changelog**: 3.0.0...3.0.1
+
 ## 2.7.0 - 2026-02-26
 - GPS Optimization: Added `GNSSData` struct and robust `getGNSSData` method to parse NMEA sentences directly into struct properties.
 - WebUI Hotspot Refactor: Improved `WebUI_Hotspot.ino` with the new struct-based GPS parsing and automatic data attachment using stored APNs on boot.

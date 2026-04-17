@@ -24,6 +24,10 @@
   #define QUECTEL_SERIAL_PORT HardwareSerial
   #define QUECTEL_SERIAL_INIT(name, rx, tx) HardwareSerial& name = Serial1
   #define QUECTEL_SERIAL_BEGIN(name, baud, rx, tx) name.begin(baud)
+#elif defined(ARDUINO_ARCH_RP2040) || defined(ARDUINO_ARCH_RP2350)
+  #define QUECTEL_SERIAL_PORT SerialUART
+  #define QUECTEL_SERIAL_INIT(name, rx, tx) SerialUART& name = Serial1
+  #define QUECTEL_SERIAL_BEGIN(name, baud, rx, tx) do { name.setRX(rx); name.setTX(tx); name.begin(baud); } while(0)
 #else
   #include <SoftwareSerial.h>
   #define QUECTEL_SERIAL_PORT SoftwareSerial
@@ -32,7 +36,7 @@
 #endif
 
 // Define if HardwareSerial is available
-#if defined(ARDUINO_ARCH_ESP32) || defined(ARDUINO_ARCH_ZEPHYR) || defined(HAVE_HWSERIAL0) || defined(HAVE_HWSERIAL1) || defined(HAVE_HWSERIAL2) || defined(HAVE_HWSERIAL3) || defined(UBRRH) || defined(UBRR0H) || defined(USBCON)
+#if defined(ARDUINO_ARCH_ESP32) || defined(ARDUINO_ARCH_ZEPHYR) || defined(ARDUINO_ARCH_RP2040) || defined(ARDUINO_ARCH_RP2350) || defined(HAVE_HWSERIAL0) || defined(HAVE_HWSERIAL1) || defined(HAVE_HWSERIAL2) || defined(HAVE_HWSERIAL3) || defined(UBRRH) || defined(UBRR0H) || defined(USBCON)
 #define QUECTEL_HAS_HARDWARE_SERIAL
 #endif
 
