@@ -3,6 +3,8 @@
 ## 3.5.0 - 2026-04-17
 - Hardware Support: Added Raspberry Pi Pico W, Pico W2, and Pico 2W support (`ARDUINO_ARCH_RP2040` and `ARDUINO_ARCH_RP2350`) compatible with Earle Philhower's core.
 - WebUI Hotspot: Updated the example to natively support Pico architectures featuring seamless `SerialUART` mapping and WebServer imports.
+- Fixes: Resolved compilation errors related to `ESP.restart()` routing for Pico and modernized parsing logic per ArduinoJson V7 deprecations (`createNestedObject()`, `containsKey()`, etc).
+- Docs: Added instructions on how to add custom sensor data into the Consentium IoT Telemetry demo JSON payload inside the README.
 
 ### What's Changed
 - Added Japanese support for SMS messages by @GWan1234 in #3

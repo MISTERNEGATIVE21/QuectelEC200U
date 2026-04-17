@@ -183,6 +183,19 @@ For a detailed example, see `examples/PPPOS_Demo/PPPOS_Demo.ino`.
   #### 1. Consentium IoT Telemetry (`Consentium_IoT_Demo`)
   Uploads JSON telemetry data over a secure socket. It loads the Consentium IoT TLS cert, configures SSL (`sslConfigure`), and posts metrics to `https://api.consentiumiot.com`. It can optionally set a `receiveKey` to fetch recent updates immediately after sending.
 
+  **How to Add Sensor Data (Add Telemetry):**
+  In the `Consentium_IoT_Demo` sketch, adding telemetry data for Consentium IoT is easy. You simply update the `SENSORS` array with your sensor's name and value string:
+  ```cpp
+  static const SensorEntry SENSORS[] = {
+    {"Temperature", "25.50"}, // Replace hardcoded value with your reading
+    {"Humidity", "60.00"},
+    {"Custom Sensor", "1023"},
+    {"", ""},
+    {"", ""}
+  };
+  ```
+  The demo automatically bundles these into the standard Consentium IoT JSON payload structure.
+
   #### 2. Telegram Bot (`Telegram_Bot_Demo`)
   Demonstrates using the new `QuectelTelegramBot` helper class to natively interact with the Telegram API. Instead of relying on unwieldy external Wi-Fi libraries or PPPoS, this lightweight class hooks directly into the modem's built-in `httpsGet` and `httpsPost` commands. It easily processes incoming JSON updates and handles sending messages effortlessly.
 
@@ -366,17 +379,4 @@ Quectel, EC200U, and related marks are trademarks or registered trademarks of Qu
 
 ## Changelog
 
-### v2.7.0
-- **GPS Optimization:** Added `GNSSData` struct and robust `getGNSSData` method to parse NMEA sentences directly into simple properties.
-- **WebUI Hotspot Refactor:** Improved `WebUI_Hotspot.ino` to use struct-based GPS parsing, added automatic data connectivity on startup with stored APNs.
-- **Example Cleanup:** Removed redundant legacy examples to reduce clutter, favoring unified examples (like `HTTP_HTTPS_Unified_Demo`).
-
-### v2.6.0
-- **New Platform Support:** Added support for **Arduino Q Uno** (Zephyr-based) using `ARDUINO_ARCH_ZEPHYR`.
-- **Optimization:** Converted library to use `const char*` for string parameters, significantly reducing memory usage and overhead.
-- **Compatibility:** Added `String` overloads to maintain backward compatibility and fix `F()` macro usage issues.
-- **Examples:** Updated all 35+ examples to support ESP32, Zephyr, and SoftwareSerial platforms automatically.
-- **Fixes:** Resolved duplicate code blocks in advanced examples.
-
-### v2.5.0
-- Initial major release with advanced features (SSL, MQTT, GNSS, etc.).
+The full release history and library updates have been moved to the [CHANGELOG.md](./CHANGELOG.md) file. Please refer to it for all recent improvements!
