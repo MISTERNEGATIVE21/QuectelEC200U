@@ -11,8 +11,8 @@
 
 // --- NETWORK & API CREDENTIALS ---
 const char* APN_NAME  = "YOUR_APN_HERE"; 
-const char* SEND_KEY  = "77e69be62f828f4c8d6f7613fc6f6961";
-const char* BOARD_KEY = "b84fd282b400ef35";
+const char* SEND_KEY  = "YOUR_SEND_KEY";
+const char* BOARD_KEY = "YOUR_BOARD_KEY";
 
 // --- TIMING CONFIGURATION ---
 const unsigned long SEND_INTERVAL_MS = 30000; // Send telemetry every 30 seconds
